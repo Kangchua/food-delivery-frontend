@@ -1,0 +1,10 @@
+{
+  "app": {
+    "name": "Food Delivery"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout"
+  }
+}
