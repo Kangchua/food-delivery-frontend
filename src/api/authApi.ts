@@ -21,6 +21,7 @@ const decodeToken = (token: string): Record<string, any> => {
 // Helper function to extract roles from JWT token
 const getRolesFromToken = (token: string): string[] => {
   const decoded = decodeToken(token);
+  console.log('DEBUG - Decoded JWT token:', decoded);
   
   // JWT role claims can be in different formats
   // Try common formats: 'role', 'roles', 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
@@ -28,12 +29,18 @@ const getRolesFromToken = (token: string): string[] => {
     (key) => key === 'role' || key === 'roles' || key.includes('/role')
   );
   
+  console.log('DEBUG - Looking for role key, found:', roleKey);
+  
   if (roleKey) {
     const value = decoded[roleKey];
+    console.log('DEBUG - Role value:', value);
     // Handle both single role (string) and multiple roles (array)
-    return Array.isArray(value) ? value : [value];
+    const roles = Array.isArray(value) ? value : [value];
+    console.log('DEBUG - Extracted roles:', roles);
+    return roles;
   }
   
+  console.log('DEBUG - No role key found in token');
   return [];
 };
 

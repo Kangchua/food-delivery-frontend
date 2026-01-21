@@ -92,7 +92,7 @@ const HomePage: React.FC = () => {
             {/* Location */}
             <div className="mt-4 inline-flex items-center gap-2 text-sm text-muted-foreground">
               <MapPin className="h-4 w-4 text-primary" />
-              <span>Giao đến: <strong className="text-foreground">TP. Hồ Chí Minh</strong></span>
+              <span>Giao đến: <strong className="text-foreground">TP. Đà Nẵng</strong></span>
             </div>
           </div>
 

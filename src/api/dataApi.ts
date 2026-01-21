@@ -18,6 +18,8 @@ export interface Product {
   rating: number;
   soldCount: number;
   isAvailable: boolean;
+  createdAt?: string;
+  displayOrder?: number;
 }
 
 export interface CartItem {
@@ -72,6 +74,25 @@ export interface ApiResult<T = Record<string, unknown>> {
   errorCode?: string;
 }
 
+// Helper function to map backend product response to frontend Product
+const mapProductResponse = (data: any): Product => {
+  return {
+    id: data.id || data.Id,
+    name: data.name || data.Name,
+    description: data.description || data.Description || '',
+    price: data.price || data.Price,
+    // Map ImageUrl from backend to image for frontend
+    image: data.imageUrl || data.ImageUrl || data.image || data.Image || '',
+    categoryId: data.categoryId || data.CategoryId,
+    categoryName: data.categoryName || data.CategoryName || '',
+    rating: data.rating || data.Rating || 0,
+    soldCount: data.soldCount || data.SoldCount || 0,
+    isAvailable: data.isAvailable !== undefined ? data.isAvailable : data.IsAvailable !== undefined ? data.IsAvailable : true,
+    createdAt: data.createdAt || data.CreatedAt,
+    displayOrder: data.displayOrder !== undefined ? data.displayOrder : data.DisplayOrder !== undefined ? data.DisplayOrder : 0,
+  };
+};
+
 export const productApi = {
   // Lấy tất cả danh mục
   getCategories: async (): Promise<Category[]> => {
@@ -109,16 +130,20 @@ export const productApi = {
       const response = await axiosClient.get<Product[] | ApiResult<Product[]>>(url);
       
       // Handle both plain array and wrapped response
+      let products: any[] = [];
       if (Array.isArray(response.data)) {
-        return response.data;
+        products = response.data;
+      } else {
+        // Handle wrapped ApiResult format
+        const wrappedData = response.data as ApiResult<any>;
+        if (!wrappedData.isSuccess) {
+          throw new Error(wrappedData.message || 'Lấy sản phẩm thất bại');
+        }
+        products = wrappedData.data || [];
       }
       
-      // Handle wrapped ApiResult format
-      const wrappedData = response.data as ApiResult<Product[]>;
-      if (!wrappedData.isSuccess) {
-        throw new Error(wrappedData.message || 'Lấy sản phẩm thất bại');
-      }
-      return wrappedData.data || [];
+      // Map each product from backend format to frontend format
+      return products.map(mapProductResponse);
     } catch (error: any) {
       const message =
         error.response?.data?.message || error.message || 'Lỗi kết nối server';
@@ -132,16 +157,22 @@ export const productApi = {
       const response = await axiosClient.get<Product | ApiResult<Product>>(`/products/${id}`);
       
       // Handle both plain object and wrapped response
+      let product: any;
       if ('price' in response.data) {
-        return response.data as Product;
+        product = response.data;
+      } else {
+        // Handle wrapped ApiResult format
+        const wrappedData = response.data as ApiResult<any>;
+        if (!wrappedData.isSuccess) {
+          throw new Error(wrappedData.message || 'Lấy chi tiết sản phẩm thất bại');
+        }
+        product = wrappedData.data;
       }
       
-      // Handle wrapped ApiResult format
-      const wrappedData = response.data as ApiResult<Product>;
-      if (!wrappedData.isSuccess) {
-        throw new Error(wrappedData.message || 'Lấy sản phẩm thất bại');
-      }
-      return wrappedData.data || null;
+      if (!product) return null;
+      
+      // Map product from backend format to frontend format
+      return mapProductResponse(product);
     } catch (error: any) {
       const message =
         error.response?.data?.message || error.message || 'Lỗi kết nối server';
@@ -157,16 +188,20 @@ export const productApi = {
       });
       
       // Handle both plain array and wrapped response
+      let products: any[] = [];
       if (Array.isArray(response.data)) {
-        return response.data;
+        products = response.data;
+      } else {
+        // Handle wrapped ApiResult format
+        const wrappedData = response.data as ApiResult<any>;
+        if (!wrappedData.isSuccess) {
+          throw new Error(wrappedData.message || 'Tìm kiếm sản phẩm thất bại');
+        }
+        products = wrappedData.data || [];
       }
       
-      // Handle wrapped ApiResult format
-      const wrappedData = response.data as ApiResult<Product[]>;
-      if (!wrappedData.isSuccess) {
-        throw new Error(wrappedData.message || 'Tìm kiếm sản phẩm thất bại');
-      }
-      return wrappedData.data || [];
+      // Map each product from backend format to frontend format
+      return products.map(mapProductResponse);
     } catch (error: any) {
       const message =
         error.response?.data?.message || error.message || 'Lỗi kết nối server';
