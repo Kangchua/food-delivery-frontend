@@ -12,6 +12,9 @@ import OrderDetailPage from '@/pages/customer/OrderDetailPage';
 import PaymentResultPage from '@/pages/customer/PaymentResultPage';
 import ProfilePage from '@/pages/customer/ProfilePage';
 import ProductDetailPage from '@/pages/customer/ProductDetailPage';
+import AddressesManagementPage from '@/pages/customer/AddressesManagementPage';
+import NotificationsPage from '@/pages/customer/NotificationsPage';
+import SecurityPage from '@/pages/customer/SecurityPage';
 
 const CustomerRoutes = () => {
   const location = useLocation();
@@ -25,9 +28,12 @@ const CustomerRoutes = () => {
     if (pathname === '/checkout') return <CheckoutPage />;
     if (pathname === '/orders') return <OrdersPage />;
     if (pathname === '/profile') return <ProfilePage />;
+    if (pathname === '/profile/addresses') return <AddressesManagementPage />;
+    if (pathname === '/profile/notifications') return <NotificationsPage />;
+    if (pathname === '/profile/security') return <SecurityPage />;
     if (pathname === '/payment-result') return <PaymentResultPage />;
-    if (pathname.match(/^\/product\/\d+$/)) return <ProductDetailPage />;
-    if (pathname.match(/^\/orders\/\d+$/)) return <OrderDetailPage />;
+    if (pathname.match(/^\/product\//)) return <ProductDetailPage />;
+    if (pathname.match(/^\/orders\/[a-f0-9\-]+$/i)) return <OrderDetailPage />;
     
     return null;
   };
@@ -48,6 +54,9 @@ const CustomerRoutes = () => {
         <Route path="orders/:orderId" element={<OrderDetailPage />} />
         <Route path="payment-result" element={<PaymentResultPage />} />
         <Route path="profile" element={<ProfilePage />} />
+        <Route path="profile/addresses" element={<AddressesManagementPage />} />
+        <Route path="profile/notifications" element={<NotificationsPage />} />
+        <Route path="profile/security" element={<SecurityPage />} />
         <Route path="product/:productId" element={<ProductDetailPage />} />
         <Route path="*" element={<Navigate to="/customer" replace />} />
       </Route>

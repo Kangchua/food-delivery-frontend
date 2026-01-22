@@ -19,8 +19,8 @@ const OrdersPage: React.FC = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const data = await orderApi.getAll();
-        setOrders(data);
+        const data = await orderApi.getHistory();
+        setOrders(data.items);
       } catch (error) {
         console.error('Failed to fetch orders:', error);
       } finally {
@@ -87,8 +87,8 @@ const OrdersPage: React.FC = () => {
                     {order.items.slice(0, 3).map((item, index) => (
                       <img
                         key={index}
-                        src={item.product.image}
-                        alt={item.product.name}
+                        src={item.productImage}
+                        alt={item.productName}
                         className="h-10 w-10 rounded-full border-2 border-card object-cover"
                       />
                     ))}

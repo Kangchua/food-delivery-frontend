@@ -10,12 +10,13 @@ export interface UserProfile {
 
 export interface Address {
   id: string;
-  userId: string;
-  street: string;
-  ward: string;
-  district: string;
-  city: string;
-  isDefault: boolean;
+  label: string;           // Tên địa chỉ (Nhà, Công ty, ...)
+  receiverName: string;    // Tên người nhận
+  phoneNumber: string;     // Số điện thoại
+  fullAddress: string;     // Địa chỉ chi tiết
+  latitude?: number;       // Vĩ độ
+  longitude?: number;      // Kinh độ
+  isDefault: boolean;      // Địa chỉ mặc định
 }
 
 export interface ApiResult<T = Record<string, unknown>> {
@@ -52,7 +53,7 @@ export const userApi = {
 
   getAddresses: async (): Promise<Address[]> => {
     try {
-      const response = await axiosClient.get<ApiResult<Address[]>>('/addresses');
+      const response = await axiosClient.get<ApiResult<Address[]>>('/address');
       if (!response.data.isSuccess) {
         throw new Error(response.data.message || 'Lỗi lấy danh sách địa chỉ');
       }
@@ -62,9 +63,9 @@ export const userApi = {
     }
   },
 
-  addAddress: async (data: Omit<Address, 'id' | 'userId'>): Promise<Address> => {
+  addAddress: async (data: Omit<Address, 'id' | 'isDefault'> & { isDefault?: boolean }): Promise<Address> => {
     try {
-      const response = await axiosClient.post<ApiResult<Address>>('/addresses', data);
+      const response = await axiosClient.post<ApiResult<Address>>('/address', data);
       if (!response.data.isSuccess) {
         throw new Error(response.data.message || 'Lỗi thêm địa chỉ');
       }
@@ -76,7 +77,7 @@ export const userApi = {
 
   updateAddress: async (id: string, data: Partial<Address>): Promise<Address> => {
     try {
-      const response = await axiosClient.put<ApiResult<Address>>(`/addresses/${id}`, data);
+      const response = await axiosClient.put<ApiResult<Address>>(`/address/${id}`, data);
       if (!response.data.isSuccess) {
         throw new Error(response.data.message || 'Lỗi cập nhật địa chỉ');
       }
@@ -88,9 +89,20 @@ export const userApi = {
 
   deleteAddress: async (id: string): Promise<void> => {
     try {
-      const response = await axiosClient.delete<ApiResult>(`/addresses/${id}`);
+      const response = await axiosClient.delete<ApiResult>(`/address/${id}`);
       if (!response.data.isSuccess) {
         throw new Error(response.data.message || 'Lỗi xóa địa chỉ');
+      }
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || error.message || 'Lỗi kết nối server');
+    }
+  },
+
+  setDefaultAddress: async (id: string): Promise<void> => {
+    try {
+      const response = await axiosClient.patch<ApiResult>(`/address/${id}/default`);
+      if (!response.data.isSuccess) {
+        throw new Error(response.data.message || 'Lỗi đặt địa chỉ mặc định');
       }
     } catch (error: any) {
       throw new Error(error.response?.data?.message || error.message || 'Lỗi kết nối server');

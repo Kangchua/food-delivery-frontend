@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, CreditCard, Truck, CheckCircle } from 'lucide-react';
+import { MapPin, CreditCard, Truck, CheckCircle, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,9 +10,12 @@ import MainLayout from '@/components/layout/MainLayout';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
 import { orderApi } from '@/api/orderApi';
+import { userApi } from '@/api/userApi';
 import useTranslation from '@/hooks/useTranslation';
 import { formatCurrency } from '@/utils/formatters';
 import { useToast } from '@/hooks/use-toast';
+import { calculateDistance, formatDistance } from '@/utils/locationUtils';
+import type { Address } from '@/types/user.type';
 
 type PaymentMethod = 'cod' | 'momo' | 'vnpay' | 'bank';
 
@@ -25,30 +28,49 @@ const CheckoutPage: React.FC = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string>('');
   const [address, setAddress] = useState('');
   const [note, setNote] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
 
-  const paymentMethods = [
-    { id: 'cod', label: t('payment.cod'), icon: '💵' },
-    { id: 'momo', label: t('payment.momo'), icon: '📱' },
-    { id: 'vnpay', label: t('payment.vnpay'), icon: '🏦' },
-    { id: 'bank', label: t('payment.bankTransfer'), icon: '💳' },
-  ];
+  useEffect(() => {
+    const fetchAddresses = async () => {
+      try {
+        const data = await userApi.getAddresses();
+        setAddresses(data);
+        if (data.length > 0) {
+          const defaultAddress = data.find(addr => addr.isDefault) || data[0];
+          setSelectedAddressId(defaultAddress.id);
+        }
+      } catch (error) {
+        console.error('Failed to fetch addresses:', error);
+      }
+    };
+    
+    if (user?.id) {
+      fetchAddresses();
+    }
+  }, [user?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!address.trim()) {
-      toast({ title: 'Vui lòng nhập địa chỉ giao hàng', variant: 'destructive' });
+    if (!selectedAddressId) {
+      toast({ title: 'Vui lòng chọn địa chỉ giao hàng', variant: 'destructive' });
+      return;
+    }
+
+    if (items.length === 0) {
+      toast({ title: 'Giỏ hàng trống', variant: 'destructive' });
       return;
     }
 
     setIsLoading(true);
     try {
-      await orderApi.create({
-        deliveryAddress: address,
-        paymentMethod,
+      await orderApi.checkout({
+        addressId: selectedAddressId,
+        cartItemIds: items.map(item => item.id),
         note: note || undefined,
       });
 
@@ -112,46 +134,46 @@ const CheckoutPage: React.FC = () => {
                   <h2 className="text-lg font-bold">{t('checkout.deliveryAddress')}</h2>
                 </div>
                 <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="address">{t('address.fullAddress')}</Label>
-                    <Textarea
-                      id="address"
-                      placeholder="Số nhà, tên đường, phường, quận, thành phố..."
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      className="mt-1"
-                      rows={3}
-                    />
-                  </div>
+                  {addresses.length > 0 && (
+                    <div>
+                      <Label>{t('address.label')}</Label>
+                      <RadioGroup value={selectedAddressId} onValueChange={setSelectedAddressId}>
+                        <div className="mt-2 space-y-2">
+                          {addresses.map((addr) => (
+                            <label
+                              key={addr.id}
+                              className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
+                                selectedAddressId === addr.id
+                                  ? 'border-primary bg-primary/5'
+                                  : 'border-border hover:border-primary/50'
+                              }`}
+                            >
+                              <RadioGroupItem value={addr.id} />
+                              <div className="flex-1">
+                                <p className="font-medium">{addr.label} - {addr.receiverName}</p>
+                                <p className="text-sm text-muted-foreground">{addr.fullAddress}</p>
+                                <p className="text-xs text-muted-foreground">{addr.phoneNumber}</p>
+                                {addr.latitude && addr.longitude && (
+                                  <div className="mt-2 flex items-center gap-1 text-xs text-success">
+                                    <Navigation className="h-3 w-3" />
+                                    <span>
+                                      Cách: {formatDistance(
+                                        calculateDistance(16.0471, 108.2068, addr.latitude, addr.longitude)
+                                      )}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                              {addr.isDefault && (
+                                <span className="text-xs font-medium text-primary">Mặc định</span>
+                              )}
+                            </label>
+                          ))}
+                        </div>
+                      </RadioGroup>
+                    </div>
+                  )}
                 </div>
-              </div>
-
-              {/* Payment Method */}
-              <div className="rounded-xl bg-card p-6 shadow-card">
-                <div className="mb-4 flex items-center gap-2">
-                  <CreditCard className="h-5 w-5 text-primary" />
-                  <h2 className="text-lg font-bold">{t('checkout.paymentMethod')}</h2>
-                </div>
-                <RadioGroup
-                  value={paymentMethod}
-                  onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}
-                  className="space-y-3"
-                >
-                  {paymentMethods.map((method) => (
-                    <label
-                      key={method.id}
-                      className={`flex cursor-pointer items-center gap-4 rounded-lg border p-4 transition-colors ${
-                        paymentMethod === method.id
-                          ? 'border-primary bg-primary/5'
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                    >
-                      <RadioGroupItem value={method.id} />
-                      <span className="text-2xl">{method.icon}</span>
-                      <span className="font-medium">{method.label}</span>
-                    </label>
-                  ))}
-                </RadioGroup>
               </div>
 
               {/* Order Note */}
