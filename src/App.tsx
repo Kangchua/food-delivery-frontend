@@ -109,6 +109,16 @@ const App = () => (
                   <CustomerRoutes />
                 </ProtectedRoute>
               } />
+              <Route path="/orders/*" element={
+                <ProtectedRoute>
+                  <CustomerRoutes />
+                </ProtectedRoute>
+              } />
+              <Route path="/profile/*" element={
+                <ProtectedRoute>
+                  <CustomerRoutes />
+                </ProtectedRoute>
+              } />
               <Route path="/profile" element={
                 <ProtectedRoute>
                   <CustomerRoutes />

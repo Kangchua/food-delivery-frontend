@@ -17,8 +17,11 @@ export interface StatusHistoryItem {
 
 export interface OrderItem {
   productId: string;
+  productName: string;
+  productImage: string;
   quantity: number;
-  price: number;
+  unitPrice: number;
+  price?: number; // calculated from unitPrice * quantity
 }
 
 export interface Order {
@@ -47,6 +50,19 @@ export interface CreateOrderRequest {
   deliveryAddress: string;
   note?: string;
   paymentMethod: 'cod' | 'momo' | 'vnpay' | 'bank';
+}
+
+export interface CheckoutRequest {
+  addressId: string;
+  cartItemIds: string[];
+  note?: string;
+}
+
+export interface CheckoutResponse {
+  orderId: string;
+  orderCode: string;
+  status: OrderStatus;
+  totalAmount: number;
 }
 
 export interface ApiResult<T = Record<string, unknown>> {
@@ -152,6 +168,42 @@ export const orderApi = {
         throw new Error(wrappedData.message || 'Lỗi xác nhận giao hàng');
       }
       return wrappedData.data!;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || error.message || 'Lỗi kết nối server');
+    }
+  },
+
+  // Thanh toán (checkout) với giỏ hàng
+  checkout: async (data: CheckoutRequest): Promise<CheckoutResponse> => {
+    try {
+      const response = await axiosClient.post<CheckoutResponse | ApiResult<CheckoutResponse>>('/orders/checkout', data);
+      
+      // Handle both plain object and wrapped response
+      if ('orderId' in response.data && 'orderCode' in response.data) {
+        return response.data as CheckoutResponse;
+      }
+      
+      const wrappedData = response.data as ApiResult<CheckoutResponse>;
+      if (!wrappedData.isSuccess) {
+        throw new Error(wrappedData.message || 'Lỗi thanh toán');
+      }
+      return wrappedData.data!;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || error.message || 'Lỗi kết nối server');
+    }
+  },
+
+  // Lấy lịch sử đơn hàng
+  getHistory: async (page = 1, pageSize = 10): Promise<{ items: Order[], total: number }> => {
+    try {
+      const response = await axiosClient.get<ApiResult<{ items: Order[], total: number }>>('/orders/history', {
+        params: { page, pageSize }
+      });
+      
+      if (!response.data.isSuccess) {
+        throw new Error(response.data.message || 'Lỗi lấy lịch sử đơn hàng');
+      }
+      return response.data.data || { items: [], total: 0 };
     } catch (error: any) {
       throw new Error(error.response?.data?.message || error.message || 'Lỗi kết nối server');
     }

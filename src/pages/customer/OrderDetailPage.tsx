@@ -135,11 +135,11 @@ const OrderDetailPage: React.FC = () => {
                 {order.items?.map((item, index) => (
                   <div key={index} className="flex justify-between gap-2">
                     <div className="flex-1">
-                      <p className="font-medium">{item.productId}</p>
+                      <p className="font-medium">{item.productName}</p>
                       <p className="text-sm text-muted-foreground">x{item.quantity}</p>
                     </div>
                     <p className="font-medium">
-                      {formatCurrency(item.price * item.quantity)}
+                      {formatCurrency(item.unitPrice * item.quantity)}
                     </p>
                   </div>
                 ))}
