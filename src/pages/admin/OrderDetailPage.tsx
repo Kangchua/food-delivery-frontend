@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   CreditCard,
   User,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import MainLayout from "@/components/layout/MainLayout";
@@ -23,7 +24,7 @@ import {
 } from "@/types";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
-const OrderDetailPage: React.FC = () => {
+const OrderDetailPageAdmin: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   console.log("ID từ URL:", id);
   const navigate = useNavigate();
@@ -33,8 +34,8 @@ const OrderDetailPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const getPaymentMethodLabel = (method: PaymentMethod) => {
     const labels: Record<number, string> = {
-      [PaymentMethod.Card]: "Tiền mặt",
-      [PaymentMethod.Cash]: "Thẻ ngân hàng",
+      [PaymentMethod.Cash]: "Tiền mặt",
+      [PaymentMethod.Card]: "Thẻ ngân hàng",
       [PaymentMethod.Momo]: "Ví MoMo",
     };
     return labels[method] || "Không xác định";
@@ -82,7 +83,7 @@ const OrderDetailPage: React.FC = () => {
     setIsSubmitting(true);
     try {
       const reason = inputValue || "Người dùng yêu cầu hủy";
-      const result = await orderApi.cancel(order.orderId, reason);
+      const result = await orderApi.cancelByAdmin(order.orderId, reason);
       if (result) {
         toast.success("Đơn hàng đã được hủy thành công");
       }
@@ -95,45 +96,61 @@ const OrderDetailPage: React.FC = () => {
       setIsSubmitting(false);
     }
   };
-  const [modalConfig, setModalConfig] = useState<{
-    isOpen: boolean;
-    isAccepted: boolean;
-    title: string;
-    description: string;
-  }>({
-    isOpen: false,
-    isAccepted: true,
-    title: "",
-    description: "",
-  });
-  const handleDecision = async (inputValue?: string) => {
+
+  const [isConfirmOrderModalOpen, setIsConfirmOrderModalOpen] = useState(false);
+  const handleConfirmOrder = async () => {
     if (!order) return;
     setIsSubmitting(true);
     try {
-      const note =
-        inputValue ||
-        (modalConfig.isAccepted
-          ? "Người dùng tiếp tục đơn hàng."
-          : "Người dùng không tiếp tục đơn hàng.");
-      await orderApi.respondProposal(
-        order.orderId,
-        modalConfig.isAccepted,
-        note,
-      );
-      toast.success(
-        modalConfig.isAccepted
-          ? "Đơn hàng được tiếp tục."
-          : "Đơn hàng đã bị hủy.",
-      );
+      const result = await orderApi.confirmOrderByAdmin(order.orderId);
+      if (result) {
+        toast.success("Đơn hàng xác nhận thành công");
+      }
       const updated = await orderApi.getByOrderId(order.orderId);
       setOrder(updated);
     } catch (error: any) {
-      toast.error(error.message || "Lỗi xử lý");
+      toast.error(error.message || "Lỗi khi xác nhận đơn");
     } finally {
       setIsSubmitting(false);
-      setModalConfig((prev) => ({ ...prev, isOpen: false }));
     }
   };
+  const [isStartPreparingModalOpen, setIsStartPreparingModalOpen] =
+    useState(false);
+  const handleStartPreparing = async () => {
+    if (!order) return;
+    setIsSubmitting(true);
+    try {
+      const result = await orderApi.startPreparingByAdmin(order.orderId);
+      if (result) {
+        toast.success("Bắt đầu nấu các món ăn.");
+      }
+      const updated = await orderApi.getByOrderId(order.orderId);
+      setOrder(updated);
+    } catch (error: any) {
+      toast.error(error.message || "Lỗi khi xác nhận đơn");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  const [isFinalPreparingModalOpen, setIsFinalPreparingModalOpen] =
+    useState(false);
+  const handleFinalPreparing = async () => {
+    if (!order) return;
+    setIsSubmitting(true);
+    try {
+      const result = await orderApi.finalPreparingByAdmin(order.orderId);
+      if (result) {
+        toast.success("Các món ăn đã nấu xong.");
+      }
+      const updated = await orderApi.getByOrderId(order.orderId);
+      setOrder(updated);
+    } catch (error: any) {
+      toast.error(error.message || "Lỗi khi xác nhận đơn");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <MainLayout>
@@ -160,7 +177,7 @@ const OrderDetailPage: React.FC = () => {
             <Button
               variant="outline"
               size="icon"
-              onClick={() => navigate("/orders")}
+              onClick={() => navigate("/admin/orders")}
               className="rounded-full"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -177,75 +194,98 @@ const OrderDetailPage: React.FC = () => {
               </p>
             </div>
           </div>
-
-          {(order.currentStatus === OrderStatus.Pending ||
-            order.currentStatus === OrderStatus.Confirmed) && (
+          {order.currentStatus === OrderStatus.Pending && (
             <>
               <Button
-                variant="destructive"
-                onClick={() => setIsCancelModalOpen(true)}
+                variant="default"
+                onClick={() => setIsConfirmOrderModalOpen(true)}
                 disabled={isSubmitting}
                 className="rounded-full px-8 shadow-lg shadow-red-100"
               >
-                {isSubmitting ? "Đang xử lý..." : "Hủy đơn hàng"}
+                {isSubmitting ? "Đang xử lý..." : "Nhận đơn hàng"}
               </Button>
               <ConfirmModal
-                isOpen={isCancelModalOpen}
-                onClose={() => setIsCancelModalOpen(false)}
-                onConfirm={handleConfirmCancel}
-                title="Xác nhận hủy đơn hàng"
-                description="Vui lòng cho chúng tôi biết lý do bạn muốn hủy đơn hàng này. Lưu ý: Hành động này không thể hoàn tác."
-                showInput={true}
-                inputPlaceholder="Nhập lý do hủy (ví dụ: Thay đổi địa chỉ, Đặt trùng...)"
+                isOpen={isConfirmOrderModalOpen}
+                onClose={() => setIsConfirmOrderModalOpen(false)}
+                onConfirm={handleConfirmOrder}
+                title="Xác nhận nhận đơn hàng"
+                description="Xác nhận đơn hàng có thể nấu."
               />
             </>
           )}
-
-          {order.currentStatus === OrderStatus.WaitingCustomerDecision && (
-            <div className="flex gap-4">
+          {order.currentStatus === OrderStatus.Confirmed && (
+            <>
               <Button
-                onClick={() =>
-                  setModalConfig({
-                    isOpen: true,
-                    isAccepted: true,
-                    title: "Xác nhận tiếp tục đơn hàng",
-                    description:
-                      "Đơn hàng của bạn sẽ tiếp tục với các món còn lại.",
-                  })
-                }
+                variant="default"
+                onClick={() => setIsStartPreparingModalOpen(true)}
                 disabled={isSubmitting}
-                className="rounded-full px-8 bg-green-600 hover:bg-green-700"
+                className="rounded-full px-8 shadow-lg shadow-red-100"
               >
-                Tiếp tục đơn hàng
-              </Button>
-              <Button
-                onClick={() =>
-                  setModalConfig({
-                    isOpen: true,
-                    isAccepted: false,
-                    title: "Xác nhận không tiếp tục",
-                    description: "Đơn hàng sẽ bị hủy hoàn toàn.",
-                  })
-                }
-                variant="destructive"
-                disabled={isSubmitting}
-                className="rounded-full px-8"
-              >
-                Không tiếp tục
+                {isSubmitting ? "Đang xử lý..." : "Bắt đầu chế biến"}
               </Button>
               <ConfirmModal
-                isOpen={modalConfig.isOpen}
-                onClose={() =>
-                  setModalConfig((prev) => ({ ...prev, isOpen: false }))
-                }
-                onConfirm={handleDecision}
-                title={modalConfig.title}
-                description={modalConfig.description}
-                showInput={true}
-                inputPlaceholder="Thêm ghi chú cho cửa hàng..."
+                isOpen={isStartPreparingModalOpen}
+                onClose={() => setIsStartPreparingModalOpen(false)}
+                onConfirm={handleStartPreparing}
+                title="Xác nhận bắt đầu chế biến"
+                description="Xác nhận đơn hàng có thể chế biến ngay bây giờ cho người dùng."
               />
-            </div>
+            </>
           )}
+          {order.currentStatus === OrderStatus.Preparing && (
+            <>
+              <Button
+                variant="default"
+                onClick={() => setIsFinalPreparingModalOpen(true)}
+                disabled={isSubmitting}
+                className="rounded-full px-8 shadow-lg shadow-red-100"
+              >
+                {isSubmitting ? "Đang xử lý..." : "Hoàn thành chế biến"}
+              </Button>
+              <ConfirmModal
+                isOpen={isFinalPreparingModalOpen}
+                onClose={() => setIsFinalPreparingModalOpen(false)}
+                onConfirm={handleFinalPreparing}
+                title="Xác nhận hoàn thành chế biến"
+                description="Xác nhận đơn hàng đã hoàn thành và kết thúc quá trình  chế biến các món ăn cho người dùng."
+              />
+            </>
+          )}
+          {order.currentStatus == OrderStatus.Pending && (
+            <Button
+              variant="outline"
+              onClick={() =>
+                navigate(`/admin/orders/${order.orderId}/out-of-stock`)
+              }
+              disabled={isSubmitting}
+              className="rounded-full px-8 border-amber-500 text-amber-600 hover:bg-amber-50"
+            >
+              <AlertCircle className="mr-2 h-4 w-4" />
+              Báo hết món
+            </Button>
+          )}
+          {order.currentStatus !== OrderStatus.Cancelled &&
+            order.currentStatus !== OrderStatus.Completed && (
+              <>
+                <Button
+                  variant="destructive"
+                  onClick={() => setIsCancelModalOpen(true)}
+                  disabled={isSubmitting}
+                  className="rounded-full px-8 shadow-lg shadow-red-100"
+                >
+                  {isSubmitting ? "Đang xử lý..." : "Hủy đơn hàng"}
+                </Button>
+                <ConfirmModal
+                  isOpen={isCancelModalOpen}
+                  onClose={() => setIsCancelModalOpen(false)}
+                  onConfirm={handleConfirmCancel}
+                  title="Xác nhận hủy đơn hàng"
+                  description="Vui lòng cho chúng tôi biết lý do bạn muốn hủy đơn hàng này. Lưu ý: Hành động này không thể hoàn tác."
+                  showInput={true}
+                  inputPlaceholder="Nhập lý do hủy (ví dụ: Thay đổi địa chỉ, Đặt trùng...)"
+                />
+              </>
+            )}
         </div>
 
         <div className="grid gap-8 lg:grid-cols-3">
@@ -386,4 +426,4 @@ const OrderDetailPage: React.FC = () => {
   );
 };
 
-export default OrderDetailPage;
+export default OrderDetailPageAdmin;

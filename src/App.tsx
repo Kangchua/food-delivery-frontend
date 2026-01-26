@@ -6,7 +6,12 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
-import { ProtectedRoute, AdminRoutes, ShipperRoutes, CustomerRoutes } from "@/routes";
+import {
+  ProtectedRoute,
+  AdminRoutes,
+  ShipperRoutes,
+  CustomerRoutes,
+} from "@/routes";
 import { UserRole } from "@/types/enum";
 
 // Auth Pages
@@ -37,7 +42,7 @@ const RootRedirect = () => {
   }
 
   // If authenticated, redirect based on role
-  console.log('DEBUG - RootRedirect:', { user: user.email, role: user.role });
+  console.log("DEBUG - RootRedirect:", { user: user.email, role: user.role });
   switch (user.role) {
     case UserRole.ADMIN:
       return <Navigate to="/admin" replace />;
@@ -60,76 +65,106 @@ const App = () => (
             <Routes>
               {/* Root route - redirect based on auth status and role */}
               <Route path="/" element={<RootRedirect />} />
-              
+              <Route
+                path="/*"
+                element={
+                  <ProtectedRoute>
+                    <CustomerRoutes />
+                  </ProtectedRoute>
+                }
+              />
+
               {/* Auth Routes */}
               <Route path="/auth/login" element={<LoginPage />} />
               <Route path="/auth/register" element={<RegisterPage />} />
-              <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
-              <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
-              
-              {/* Customer Routes - Protected */}
-              <Route path="/customer/*" element={
-                <ProtectedRoute>
-                  <CustomerRoutes />
-                </ProtectedRoute>
-              } />
-              
+              <Route
+                path="/auth/forgot-password"
+                element={<ForgotPasswordPage />}
+              />
+              <Route
+                path="/auth/reset-password"
+                element={<ResetPasswordPage />}
+              />
+
+              <Route
+                path="/customer/*"
+                element={
+                  <ProtectedRoute>
+                    <CustomerRoutes />
+                  </ProtectedRoute>
+                }
+              />
+
               {/* Shipper Routes - Protected */}
-              <Route path="/shipper/*" element={
-                <ProtectedRoute>
-                  <ShipperRoutes />
-                </ProtectedRoute>
-              } />
-              
+              <Route
+                path="/shipper/*"
+                element={
+                  <ProtectedRoute>
+                    <ShipperRoutes />
+                  </ProtectedRoute>
+                }
+              />
+
               {/* Admin Routes - Protected */}
-              <Route path="/admin/*" element={
-                <ProtectedRoute>
-                  <AdminRoutes />
-                </ProtectedRoute>
-              } />
-              
+              <Route
+                path="/admin/*"
+                element={
+                  <ProtectedRoute>
+                    <AdminRoutes />
+                  </ProtectedRoute>
+                }
+              />
+
               {/* Root level customer routes (for /menu, /cart, etc.) */}
-              <Route path="/menu" element={
-                <ProtectedRoute>
-                  <CustomerRoutes />
-                </ProtectedRoute>
-              } />
-              <Route path="/cart" element={
-                <ProtectedRoute>
-                  <CustomerRoutes />
-                </ProtectedRoute>
-              } />
-              <Route path="/checkout" element={
-                <ProtectedRoute>
-                  <CustomerRoutes />
-                </ProtectedRoute>
-              } />
-              <Route path="/orders" element={
-                <ProtectedRoute>
-                  <CustomerRoutes />
-                </ProtectedRoute>
-              } />
-              <Route path="/orders/*" element={
-                <ProtectedRoute>
-                  <CustomerRoutes />
-                </ProtectedRoute>
-              } />
-              <Route path="/profile/*" element={
-                <ProtectedRoute>
-                  <CustomerRoutes />
-                </ProtectedRoute>
-              } />
-              <Route path="/profile" element={
-                <ProtectedRoute>
-                  <CustomerRoutes />
-                </ProtectedRoute>
-              } />
-              <Route path="/product/:productId" element={
-                <ProtectedRoute>
-                  <CustomerRoutes />
-                </ProtectedRoute>
-              } />
-              
+              <Route
+                path="/menu"
+                element={
+                  <ProtectedRoute>
+                    <CustomerRoutes />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/cart"
+                element={
+                  <ProtectedRoute>
+                    <CustomerRoutes />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/checkout"
+                element={
+                  <ProtectedRoute>
+                    <CustomerRoutes />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile/*"
+                element={
+                  <ProtectedRoute>
+                    <CustomerRoutes />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <CustomerRoutes />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/product/:productId"
+                element={
+                  <ProtectedRoute>
+                    <CustomerRoutes />
+                  </ProtectedRoute>
+                }
+              />
+
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

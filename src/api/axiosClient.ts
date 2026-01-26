@@ -1,12 +1,13 @@
-import axios from 'axios';
+import axios from "axios";
 
 // API_BASE_URL từ env hoặc mặc định
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5147/api';
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5147/api";
 
 const axiosClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
   timeout: 30000,
   withCredentials: true, // Gửi credentials với request
@@ -15,13 +16,16 @@ const axiosClient = axios.create({
 // Request interceptor - add access token
 axiosClient.interceptors.request.use(
   (config) => {
-    const token = sessionStorage.getItem('accessToken');
+    const token = sessionStorage.getItem("accessToken");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    if (config.data instanceof FormData) {
+      delete config.headers["Content-Type"]; // nếu là FromData xóa header content
+    }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // Response interceptor - handle token refresh
@@ -34,30 +38,31 @@ axiosClient.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = sessionStorage.getItem('refreshToken');
+        const refreshToken = sessionStorage.getItem("refreshToken");
         if (refreshToken) {
           const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
             refreshToken,
           });
 
-          const { accessToken, refreshToken: newRefreshToken } = response.data.data;
-          sessionStorage.setItem('accessToken', accessToken);
-          sessionStorage.setItem('refreshToken', newRefreshToken);
+          const { accessToken, refreshToken: newRefreshToken } =
+            response.data.data;
+          sessionStorage.setItem("accessToken", accessToken);
+          sessionStorage.setItem("refreshToken", newRefreshToken);
 
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
           return axiosClient(originalRequest);
         }
       } catch (refreshError) {
-        sessionStorage.removeItem('accessToken');
-        sessionStorage.removeItem('refreshToken');
-        sessionStorage.removeItem('user');
-        window.location.href = '/auth/login';
+        sessionStorage.removeItem("accessToken");
+        sessionStorage.removeItem("refreshToken");
+        sessionStorage.removeItem("user");
+        window.location.href = "/auth/login";
         return Promise.reject(refreshError);
       }
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default axiosClient;
