@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Mail, Phone, LogOut, ChevronRight, MapPin, Bell, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import MainLayout from '@/components/layout/MainLayout';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { useAuth } from '@/context/AuthContext';
 import useTranslation from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
@@ -12,11 +13,22 @@ const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { toast } = useToast();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
-  const handleLogout = () => {
-    logout();
-    toast({ title: t('auth.logoutSuccess') });
-    navigate('/');
+  const handleLogoutClick = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const handleConfirmLogout = async () => {
+    try {
+      setLoggingOut(true);
+      logout();
+      toast({ title: t('auth.logoutSuccess') });
+      navigate('/');
+    } finally {
+      setLoggingOut(false);
+    }
   };
 
   const menuItems = [
@@ -87,12 +99,25 @@ const ProfilePage: React.FC = () => {
         <Button
           variant="destructive"
           className="w-full"
-          onClick={handleLogout}
+          onClick={handleLogoutClick}
         >
           <LogOut className="mr-2 h-4 w-4" />
           {t('auth.logout')}
         </Button>
       </div>
+
+      {/* Confirm Logout Dialog */}
+      <ConfirmDialog
+        isOpen={showLogoutConfirm}
+        title="Đăng xuất"
+        description="Bạn có chắc chắn muốn đăng xuất khỏi tài khoản của mình?"
+        confirmText="Đăng xuất"
+        cancelText="Hủy"
+        variant="danger"
+        isLoading={loggingOut}
+        onConfirm={handleConfirmLogout}
+        onCancel={() => setShowLogoutConfirm(false)}
+      />
     </MainLayout>
   );
 };

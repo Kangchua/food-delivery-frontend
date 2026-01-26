@@ -2,53 +2,63 @@ import React, { useEffect, useState } from 'react';
 import { Plus, Trash2, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import MainLayout from '@/components/layout/MainLayout';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import useTranslation from '@/hooks/useTranslation';
-import { adminApi } from '@/api/adminApi';
+import {
+  adminApi,
+  AdminCategory,
+  CategoryCreatePayload,
+  CategoryUpdatePayload,
+} from '@/api/adminApi';
 import { toast } from 'sonner';
-
-interface Category {
-  id: number;
-  name: string;
-  description?: string;
-  image?: string;
-}
 
 interface ModalState {
   isOpen: boolean;
   isEditing: boolean;
-  category: Partial<Category> | null;
+  category: Partial<AdminCategory> | null;
+}
+
+interface DeleteConfirmState {
+  isOpen: boolean;
+  categoryId: string | null;
+  categoryName: string | null;
 }
 
 const CategoriesManagementPage: React.FC = () => {
   const { t } = useTranslation();
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<ModalState>({ isOpen: false, isEditing: false, category: null });
+  const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirmState>({ isOpen: false, categoryId: null, categoryName: null });
+  const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-
-  useEffect(() => {
-    fetchCategories();
-  }, []);
 
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const data = await adminApi.categories.getAll();
-      const categoryList = Array.isArray(data) ? data : data?.data || [];
-      setCategories(categoryList);
+      const list = await adminApi.categories.getAll();
+      setCategories(list);
     } catch (err) {
       console.error('Error fetching categories:', err);
-      toast.error(t('error.fetchFailed') || 'Failed to fetch categories');
+      toast.error(t('error.fetchFailed') ?? 'Không tải được danh mục');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleOpenModal = (category?: Category) => {
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const handleOpenModal = (category?: AdminCategory) => {
     if (category) {
-      setModal({ isOpen: true, isEditing: true, category });
+      setModal({ isOpen: true, isEditing: true, category: { ...category } });
     } else {
-      setModal({ isOpen: true, isEditing: false, category: { name: '' } });
+      setModal({
+        isOpen: true,
+        isEditing: false,
+        category: { name: '', description: '', displayOrder: 0 },
+      });
     }
   };
 
@@ -57,38 +67,56 @@ const CategoriesManagementPage: React.FC = () => {
   };
 
   const handleSaveCategory = async () => {
-    if (!modal.category?.name) {
-      toast.error(t('validation.nameRequired') || 'Name is required');
+    const c = modal.category;
+    if (!c?.name?.trim()) {
+      toast.error(t('validation.nameRequired') ?? 'Nhập tên danh mục');
       return;
     }
-
     try {
-      if (modal.isEditing && modal.category.id) {
-        await adminApi.categories.update(modal.category.id, modal.category);
-        toast.success(t('admin.categoryUpdated') || 'Category updated');
+      setSaving(true);
+      if (modal.isEditing && c.id) {
+        await adminApi.categories.update(c.id, {
+          name: c.name.trim(),
+          description: c.description ?? null,
+          displayOrder: c.displayOrder ?? 0,
+        });
+        toast.success(t('admin.editCategory') ? 'Đã cập nhật danh mục' : 'Cập nhật thành công');
       } else {
-        await adminApi.categories.create(modal.category);
-        toast.success(t('admin.categoryCreated') || 'Category created');
+        await adminApi.categories.create({
+          name: c.name.trim(),
+          description: c.description ?? null,
+          displayOrder: c.displayOrder ?? 0,
+        });
+        toast.success(t('admin.addCategory') ? 'Đã thêm danh mục' : 'Thêm thành công');
       }
       handleCloseModal();
       fetchCategories();
-    } catch (err) {
-      console.error('Error saving category:', err);
-      toast.error(t('error.saveFailed') || 'Failed to save category');
+    } catch (err: any) {
+      toast.error(err?.message ?? (t('error.saveFailed') ?? 'Lưu thất bại'));
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleDeleteCategory = async (categoryId: number) => {
-    if (!confirm(t('admin.confirmDeleteCategory') || 'Are you sure?')) return;
+  const handleDeleteCategory = async (id: string) => {
+    const category = categories.find(c => c.id === id);
+    setDeleteConfirm({
+      isOpen: true,
+      categoryId: id,
+      categoryName: category?.name || 'danh mục này',
+    });
+  };
 
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirm.categoryId) return;
     try {
       setDeleting(true);
-      await adminApi.categories.delete(categoryId);
-      toast.success(t('admin.categoryDeleted') || 'Category deleted');
+      await adminApi.categories.delete(deleteConfirm.categoryId);
+      toast.success(t('admin.deleteCategory') ? 'Đã xóa danh mục' : 'Xóa thành công');
+      setDeleteConfirm({ isOpen: false, categoryId: null, categoryName: null });
       fetchCategories();
-    } catch (err) {
-      console.error('Error deleting category:', err);
-      toast.error(t('error.deleteFailed') || 'Failed to delete category');
+    } catch (err: any) {
+      toast.error(err?.message ?? (t('error.deleteFailed') ?? 'Xóa thất bại'));
     } finally {
       setDeleting(false);
     }
@@ -97,39 +125,34 @@ const CategoriesManagementPage: React.FC = () => {
   return (
     <MainLayout>
       <div className="container mx-auto px-4 py-6">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">{t('admin.categoriesManagement') || 'Categories Management'}</h1>
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-2xl font-bold">
+            {t('admin.categories') ?? 'Quản lý danh mục'}
+          </h1>
           <Button onClick={() => handleOpenModal()} className="gradient-primary gap-2">
             <Plus className="h-4 w-4" />
-            {t('admin.addCategory') || 'Add Category'}
+            {t('admin.addCategory') ?? 'Thêm danh mục'}
           </Button>
         </div>
 
-        {/* Categories Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {loading ? (
-            <div className="col-span-full flex min-h-64 items-center justify-center">
+            <div className="col-span-full flex min-h-48 items-center justify-center">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             </div>
           ) : categories.length === 0 ? (
-            <div className="col-span-full flex min-h-64 items-center justify-center text-muted-foreground">
-              {t('common.noData') || 'No categories found'}
+            <div className="col-span-full flex min-h-48 items-center justify-center text-muted-foreground">
+              {t('common.noData') ?? 'Chưa có danh mục'}
             </div>
           ) : (
             categories.map((category) => (
-              <div key={category.id} className="rounded-lg bg-card p-6 shadow-card hover:shadow-lg transition-shadow">
-                {category.image && (
-                  <div className="mb-4 h-40 overflow-hidden rounded-lg bg-muted">
-                    <img
-                      src={category.image}
-                      alt={category.name}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                )}
-                <h3 className="mb-2 text-lg font-bold">{category.name}</h3>
+              <div
+                key={category.id}
+                className="rounded-lg border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
+              >
+                <h3 className="mb-2 text-lg font-semibold">{category.name}</h3>
                 {category.description && (
-                  <p className="mb-4 text-sm text-muted-foreground line-clamp-2">
+                  <p className="mb-4 line-clamp-2 text-sm text-muted-foreground">
                     {category.description}
                   </p>
                 )}
@@ -138,10 +161,10 @@ const CategoriesManagementPage: React.FC = () => {
                     size="sm"
                     variant="outline"
                     onClick={() => handleOpenModal(category)}
-                    className="flex-1"
+                    className="flex-1 gap-1"
                   >
-                    <Edit2 className="h-3 w-3 mr-1" />
-                    {t('common.edit')}
+                    <Edit2 className="h-3 w-3" />
+                    {t('common.edit') ?? 'Sửa'}
                   </Button>
                   <Button
                     size="sm"
@@ -157,64 +180,74 @@ const CategoriesManagementPage: React.FC = () => {
           )}
         </div>
 
-        {/* Category Modal */}
-        {modal.isOpen && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-            <div className="max-h-[90vh] max-w-md w-full overflow-y-auto rounded-lg bg-card p-6 shadow-lg">
-              <h2 className="mb-4 text-xl font-bold">
-                {modal.isEditing ? t('admin.editCategory') : t('admin.addCategory')}
-              </h2>
+        {/* Confirm Delete Dialog */}
+        <ConfirmDialog
+          isOpen={deleteConfirm.isOpen}
+          title="Xóa danh mục"
+          description={`Bạn có chắc chắn muốn xóa danh mục "${deleteConfirm.categoryName}"? Hành động này không thể hoàn tác.`}
+          confirmText="Xóa"
+          cancelText="Hủy"
+          variant="danger"
+          isLoading={deleting}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setDeleteConfirm({ isOpen: false, categoryId: null, categoryName: null })}
+        />
 
+        {modal.isOpen && modal.category && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg bg-card p-6 shadow-lg">
+              <h2 className="mb-4 text-xl font-bold">
+                {modal.isEditing
+                  ? (t('admin.editCategory') ?? 'Sửa danh mục')
+                  : (t('admin.addCategory') ?? 'Thêm danh mục')}
+              </h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">{t('common.name')} *</label>
+                  <label className="mb-1 block text-sm font-medium">{t('common.name') ?? 'Tên'} *</label>
                   <input
                     type="text"
-                    value={modal.category?.name || ''}
-                    onChange={(e) => setModal({
-                      ...modal,
-                      category: { ...modal.category, name: e.target.value }
-                    })}
+                    value={modal.category.name ?? ''}
+                    onChange={(e) =>
+                      setModal({ ...modal, category: { ...modal.category!, name: e.target.value } })
+                    }
                     className="w-full rounded-lg border bg-background px-3 py-2 focus:border-primary focus:outline-none"
-                    placeholder={t('common.enterName')}
+                    placeholder={t('common.enterName') ?? 'Nhập tên danh mục'}
                   />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium mb-1">{t('common.description')}</label>
+                  <label className="mb-1 block text-sm font-medium">{t('common.description') ?? 'Mô tả'}</label>
                   <textarea
-                    value={modal.category?.description || ''}
-                    onChange={(e) => setModal({
-                      ...modal,
-                      category: { ...modal.category, description: e.target.value }
-                    })}
+                    value={modal.category.description ?? ''}
+                    onChange={(e) =>
+                      setModal({ ...modal, category: { ...modal.category!, description: e.target.value } })
+                    }
                     className="w-full rounded-lg border bg-background px-3 py-2 focus:border-primary focus:outline-none"
-                    placeholder={t('common.enterDescription')}
+                    placeholder={t('common.enterDescription') ?? 'Mô tả (tùy chọn)'}
                     rows={3}
                   />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium mb-1">{t('common.imageUrl')}</label>
+                  <label className="mb-1 block text-sm font-medium">Thứ tự hiển thị</label>
                   <input
-                    type="text"
-                    value={modal.category?.image || ''}
-                    onChange={(e) => setModal({
-                      ...modal,
-                      category: { ...modal.category, image: e.target.value }
-                    })}
+                    type="number"
+                    min={0}
+                    value={modal.category.displayOrder ?? 0}
+                    onChange={(e) =>
+                      setModal({
+                        ...modal,
+                        category: { ...modal.category!, displayOrder: Number(e.target.value) || 0 },
+                      })
+                    }
                     className="w-full rounded-lg border bg-background px-3 py-2 focus:border-primary focus:outline-none"
-                    placeholder={t('common.enterImageUrl')}
                   />
                 </div>
               </div>
-
               <div className="mt-6 flex gap-3">
-                <Button onClick={handleSaveCategory} className="gradient-primary flex-1">
-                  {t('common.save')}
+                <Button onClick={handleSaveCategory} disabled={saving} className="gradient-primary flex-1">
+                  {t('common.save') ?? 'Lưu'}
                 </Button>
                 <Button onClick={handleCloseModal} variant="outline" className="flex-1">
-                  {t('common.cancel')}
+                  {t('common.cancel') ?? 'Hủy'}
                 </Button>
               </div>
             </div>

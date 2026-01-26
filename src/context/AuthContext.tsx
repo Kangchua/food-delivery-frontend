@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { UserRole } from '@/types/enum';
 import authApi from '@/api/authApi';
+import cartApi from '@/api/cartApi';
 
 export interface User {
   id: string;
@@ -143,13 +144,38 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const logout = async (): Promise<void> => {
     setIsLoading(true);
     try {
+      // Save cart to database before logout
+      const cartData = localStorage.getItem('cart');
+      
+      if (cartData) {
+        try {
+          const items = JSON.parse(cartData);
+          
+          // Convert CartItem (with product object) to request format (with productId)
+          const cartItems = items.map((item: any) => ({
+            productId: item.product?.id || item.productId,
+            quantity: item.quantity,
+          }));
+          
+          await cartApi.saveCart(cartItems);
+        } catch (error) {
+          console.error('Error saving cart:', error);
+          // Continue with logout even if cart save fails
+        }
+      }
+
       await authApi.logout();
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
+      // Clear auth tokens
       sessionStorage.removeItem(STORAGE_KEY);
       sessionStorage.removeItem('accessToken');
       sessionStorage.removeItem('refreshToken');
+      
+      // Clear cart from localStorage
+      localStorage.removeItem('cart');
+      
       setUser(null);
       setIsLoading(false);
     }
