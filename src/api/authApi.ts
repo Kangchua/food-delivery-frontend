@@ -283,6 +283,28 @@ export const authApi = {
       throw new Error(message);
     }
   },
+
+  changePassword: async (data: {
+    oldPassword: string;
+    newPassword: string;
+    confirmNewPassword: string;
+  }): Promise<void> => {
+    try {
+      const response = await axiosClient.post<ApiResult>('/auth/change-password', {
+        oldPassword: data.oldPassword,
+        newPassword: data.newPassword,
+        confirmNewPassword: data.confirmNewPassword,
+      });
+      const body = response.data as ApiResult;
+      if (body && body.isSuccess === false) {
+        throw new Error(body.message || 'Đổi mật khẩu thất bại');
+      }
+    } catch (err: any) {
+      const msg =
+        err.response?.data?.message || err.message || 'Đổi mật khẩu thất bại';
+      throw new Error(msg);
+    }
+  },
 };
 
 export default authApi;

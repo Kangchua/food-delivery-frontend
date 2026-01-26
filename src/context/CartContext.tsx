@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { Product, CartItem } from '@/api/dataApi';
+import { useAuth } from '@/context/AuthContext';
+import cartApi from '@/api/cartApi';
 
 interface CartContextType {
   items: CartItem[];
@@ -18,10 +20,60 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 const DELIVERY_FEE = 15000;
 
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { isAuthenticated } = useAuth();
   const [items, setItems] = useState<CartItem[]>(() => {
     const saved = localStorage.getItem('cart');
     return saved ? JSON.parse(saved) : [];
   });
+
+  // Load cart from DB when user logs in
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadCartFromDB();
+    }
+  }, [isAuthenticated]);
+
+  // Clear cart when user logs out
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setItems([]);
+      localStorage.removeItem('cart');
+    }
+  }, [isAuthenticated]);
+
+  const loadCartFromDB = async () => {
+    try {
+      const cartData = await cartApi.get();
+      
+      if (cartData && cartData.items) {
+        // Convert CartItemDto to CartItem format (with product object)
+        const convertedItems = cartData.items.map((item: any) => ({
+          id: item.id,
+          product: {
+            id: item.productId,
+            name: item.name,
+            description: '',
+            price: item.price,
+            image: item.imageUrl || '',
+            categoryId: item.categoryId,
+            categoryName: item.categoryName,
+            rating: 0,
+            soldCount: 0,
+            isAvailable: true,
+          },
+          quantity: item.quantity,
+        }));
+        setItems(convertedItems);
+      }
+    } catch (error) {
+      console.error('Error loading cart from DB:', error);
+      // Fallback to localStorage if DB fails
+      const saved = localStorage.getItem('cart');
+      if (saved) {
+        setItems(JSON.parse(saved));
+      }
+    }
+  };
 
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(items));

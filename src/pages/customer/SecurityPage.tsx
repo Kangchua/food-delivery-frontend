@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Shield, Lock } from 'lucide-react';
+import { ArrowLeft, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import MainLayout from '@/components/layout/MainLayout';
 import { useToast } from '@/hooks/use-toast';
+import authApi from '@/api/authApi';
 
 const SecurityPage: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -46,7 +48,12 @@ const SecurityPage: React.FC = () => {
     }
 
     try {
-      // TODO: Call API to change password
+      setIsSubmitting(true);
+      await authApi.changePassword({
+        oldPassword: formData.currentPassword,
+        newPassword: formData.newPassword,
+        confirmNewPassword: formData.confirmPassword,
+      });
       toast({ title: 'Cập nhật mật khẩu thành công' });
       setFormData({
         currentPassword: '',
@@ -54,11 +61,13 @@ const SecurityPage: React.FC = () => {
         confirmPassword: '',
       });
       setIsChangingPassword(false);
-    } catch (error: any) {
+    } catch (err: any) {
       toast({
-        title: error instanceof Error ? error.message : 'Lỗi cập nhật mật khẩu',
+        title: err instanceof Error ? err.message : 'Lỗi cập nhật mật khẩu',
         variant: 'destructive',
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -132,8 +141,8 @@ const SecurityPage: React.FC = () => {
               </div>
 
               <div className="flex gap-3">
-                <Button type="submit" className="flex-1">
-                  Cập nhật
+                <Button type="submit" className="flex-1" disabled={isSubmitting}>
+                  {isSubmitting ? 'Đang xử lý...' : 'Cập nhật'}
                 </Button>
                 <Button
                   type="button"

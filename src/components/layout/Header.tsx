@@ -51,7 +51,34 @@ const Header: React.FC = () => {
 
         {/* Desktop Navigation */}
         <nav className="hidden items-center gap-6 md:flex">
-          {user?.role === 'customer' || !user ? (
+          {user?.role === 'admin' ? (
+            <>
+              <Link
+                to="/admin"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {t('nav.dashboard') ?? 'Bảng điều khiển'}
+              </Link>
+              <Link
+                to="/admin/orders"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {t('nav.orders')}
+              </Link>
+              <Link
+                to="/admin/products"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {t('nav.products')}
+              </Link>
+              <Link
+                to="/admin/categories"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {t('nav.categories')}
+              </Link>
+            </>
+          ) : user?.role === 'customer' || !user ? (
             <>
               <Link
                 to="/"
@@ -124,6 +151,11 @@ const Header: React.FC = () => {
                   <User className="mr-2 h-4 w-4" />
                   {t('nav.profile')}
                 </DropdownMenuItem>
+                {user?.role === 'admin' && (
+                  <DropdownMenuItem onClick={() => navigate('/admin')}>
+                    {t('nav.dashboard') ?? 'Bảng điều khiển'}
+                  </DropdownMenuItem>
+                )}
                 {user?.role === 'customer' && (
                   <DropdownMenuItem onClick={() => navigate('/orders')}>
                     {t('nav.orders')}
