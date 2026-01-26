@@ -88,6 +88,21 @@ export const cartApi = {
       throw new Error(error.response?.data?.message || error.message || 'Lỗi kết nối server');
     }
   },
+
+  // Lưu toàn bộ giỏ hàng lên server
+  saveCart: async (items: CartItem[]): Promise<void> => {
+    try {
+      const response = await axiosClient.post<ApiResult>('/cart/save', {
+        items,
+      });
+      if (!response.data.isSuccess) {
+        throw new Error(response.data.message || 'Lỗi lưu giỏ hàng');
+      }
+    } catch (error: any) {
+      console.error('Error saving cart:', error);
+      // Không throw để không block logout
+    }
+  },
 };
 
 export default cartApi;
