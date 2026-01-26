@@ -1,42 +1,68 @@
 // User Roles
 export enum UserRole {
-  ADMIN = 'admin',
-  SHIPPER = 'shipper',
-  CUSTOMER = 'customer',
+  ADMIN = "admin",
+  SHIPPER = "shipper",
+  CUSTOMER = "customer",
 }
 
 // Order Status
 export enum OrderStatus {
-  PENDING = 'pending',           // Chờ xác nhận
-  CONFIRMED = 'confirmed',       // Đã xác nhận
-  PREPARING = 'preparing',       // Đang chuẩn bị
-  READY = 'ready',               // Sẵn sàng giao
-  OUT_FOR_DELIVERY = 'out_for_delivery', // Đang giao hàng
-  DELIVERED = 'delivered',       // Đã giao
-  CANCELLED = 'cancelled',       // Đã hủy
+  Pending = 1,
+  WaitingCustomerDecision = 2,
+  Confirmed = 3,
+  Preparing = 4,
+  ReadyForPickup = 5,
+  Shipping = 6,
+  Completed = 7,
+  Cancelled = 8,
 }
 
 // Payment Methods
 export enum PaymentMethod {
-  COD = 'cod',                   // Thanh toán khi nhận hàng
-  MOMO = 'momo',                 // Ví MoMo
-  VNPAY = 'vnpay',               // VNPay
-  BANK_TRANSFER = 'bank_transfer', // Chuyển khoản ngân hàng
+  Cash = 0,
+  Card = 1,
+  Momo = 2,
 }
 
 // Payment Status
 export enum PaymentStatus {
-  PENDING = 'pending',           // Chờ thanh toán
-  COMPLETED = 'completed',       // Đã thanh toán
-  FAILED = 'failed',             // Thanh toán thất bại
-  REFUNDED = 'refunded',         // Đã hoàn tiền
+  Unpaid = 0,
+  Paid = 1,
+  Refunded = 2,
 }
 
-// Delivery Status (for shipper)
-export enum DeliveryStatus {
-  ASSIGNED = 'assigned',         // Đã gán shipper
-  PICKED_UP = 'picked_up',       // Đã lấy hàng
-  ON_THE_WAY = 'on_the_way',     // Đang trên đường giao
-  DELIVERED = 'delivered',       // Đã giao thành công
-  FAILED = 'failed',             // Giao hàng thất bại
-}
+// Helper lấy nhãn và màu cho OrderStatus
+export const getOrderStatusInfo = (status: OrderStatus) => {
+  const map: Record<OrderStatus, { label: string; color: string }> = {
+    [OrderStatus.Pending]: { label: "Chờ xác nhận", color: "bg-yellow-500" },
+    [OrderStatus.WaitingCustomerDecision]: {
+      label: "Chờ khác xác nhận",
+      color: "bg-yellow-700",
+    },
+    [OrderStatus.Confirmed]: { label: "Đã xác nhận", color: "bg-blue-500" },
+    [OrderStatus.Preparing]: { label: "Đang chuẩn bị", color: "bg-blue-500" },
+    [OrderStatus.ReadyForPickup]: {
+      label: "Sẵn sàng giao",
+      color: "bg-blue-500",
+    },
+    [OrderStatus.Shipping]: { label: "Đang giao", color: "bg-purple-500" },
+    [OrderStatus.Completed]: { label: "Đã giao", color: "bg-green-500" },
+    [OrderStatus.Cancelled]: { label: "Đã hủy", color: "bg-red-500" },
+  };
+  return (
+    map[status] || {
+      label: "Không xác định",
+      color: "bg-gray-50 text-gray-400",
+    }
+  );
+};
+
+// Helper lấy nhãn cho PaymentMethod
+export const getPaymentMethodLabel = (method: PaymentMethod) => {
+  const map: Record<PaymentMethod, string> = {
+    [PaymentMethod.Cash]: "Tiền mặt",
+    [PaymentMethod.Card]: "Thẻ ngân hàng",
+    [PaymentMethod.Momo]: "Ví MoMo",
+  };
+  return map[method] || "Khác";
+};

@@ -1,10 +1,11 @@
 // Enums
-export * from './enum';
+export * from "./enum";
 
 // Types
-export * from './user.type';
-export * from './product.type';
-export * from './cart.type';
-export * from './order.type';
-export * from './payment.type';
-export * from './common.type';
+export * from "./user.type";
+export * from "./product.type";
+export * from "./cart.type";
+export * from "./order.type";
+export * from "./payment.type";
+export * from "./common.type";
+export * from "./page";
