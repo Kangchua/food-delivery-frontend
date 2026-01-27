@@ -274,7 +274,7 @@ export const adminApi = {
       if (filter?.searchCode) params.searchCode = filter.searchCode;
       if (filter?.fromDate) params.fromDate = filter.fromDate;
       if (filter?.toDate) params.toDate = filter.toDate;
-      const r = await axiosClient.get<unknown>('/Orders/admin', { params });
+      const r = await axiosClient.get<unknown>('/admin/orders', { params });
       const res = r.data as ApiResult<PagedResponse<OrderAdminSummary>>;
       if (res && !res.isSuccess && res.errorCode) {
         throw new Error(res.message || 'Lỗi tải đơn hàng');
@@ -282,18 +282,18 @@ export const adminApi = {
       return normalizeOrderAdminList(r.data);
     },
     getDetail: async (orderId: string) => {
-      const r = await axiosClient.get<ApiResult<unknown>>(`/Orders/${orderId}`);
+      const r = await axiosClient.get<ApiResult<unknown>>(`/orders/${orderId}`);
       if ((r.data as ApiResult)?.isSuccess === false) throw new Error((r.data as ApiResult).message);
       return (r.data as ApiResult).data ?? r.data;
     },
     confirm: async (orderId: string) => {
-      const r = await axiosClient.post<ApiResult>(`/Orders/${orderId}/admin/confirm`);
+      const r = await axiosClient.post<ApiResult>(`/admin/orders/${orderId}/confirm`);
       if (r.data && !(r.data as ApiResult).isSuccess) {
         throw new Error((r.data as ApiResult).message || 'Xác nhận thất bại');
       }
     },
     outOfStock: async (orderId: string, payload: { removedProductIds: string[]; note: string }) => {
-      const r = await axiosClient.post<ApiResult>(`/Orders/${orderId}/admin/out-of-stock`, {
+      const r = await axiosClient.post<ApiResult>(`/admin/orders/${orderId}/out-of-stock`, {
         removedProductIds: payload.removedProductIds,
         note: payload.note,
       });
@@ -302,13 +302,13 @@ export const adminApi = {
       }
     },
     startPreparing: async (orderId: string) => {
-      const r = await axiosClient.post<ApiResult>(`/Orders/${orderId}/admin/start-preparing`);
+      const r = await axiosClient.post<ApiResult>(`/admin/orders/${orderId}/start-preparing`);
       if (r.data && !(r.data as ApiResult).isSuccess) {
         throw new Error((r.data as ApiResult).message || 'Cập nhật thất bại');
       }
     },
     cancel: async (orderId: string, reason: string) => {
-      const r = await axiosClient.post<ApiResult>(`/Orders/${orderId}/admin/cancel`, { reason });
+      const r = await axiosClient.post<ApiResult>(`/admin/orders/${orderId}/cancel`, { reason });
       if (r.data && !(r.data as ApiResult).isSuccess) {
         throw new Error((r.data as ApiResult).message || 'Hủy đơn thất bại');
       }

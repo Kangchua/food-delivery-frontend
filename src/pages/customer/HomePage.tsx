@@ -36,7 +36,7 @@ const HomePage: React.FC = () => {
       try {
         const [categoriesData, productsData] = await Promise.all([
           productApi.getCategories(),
-          productApi.getProducts(),
+          productApi.getFeaturedProducts(),
         ]);
         setCategories(categoriesData);
         setProducts(productsData);
@@ -154,7 +154,7 @@ const HomePage: React.FC = () => {
           <SkeletonList count={4} />
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {products.slice(0, 8).map((product) => (
+            {products.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
