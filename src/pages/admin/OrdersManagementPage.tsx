@@ -286,9 +286,6 @@ const OrdersManagementPage: React.FC = () => {
               <div className="text-sm font-medium">
                 Trang {pagination.page} / {pagination.totalPages || 1}
               </div>
-            </div>
-          </div>
-        )}
 
               <Button
                 variant="outline"

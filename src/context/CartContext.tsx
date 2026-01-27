@@ -37,7 +37,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     if (!isAuthenticated) {
       setItems([]);
-      localStorage.removeItem('cart');
+      // Don't remove from localStorage until they log back in
     }
   }, [isAuthenticated]);
 
@@ -45,13 +45,13 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const cartData = await cartApi.get();
       
-      if (cartData && cartData.items) {
+      if (cartData && cartData.items && Array.isArray(cartData.items)) {
         // Convert CartItemDto to CartItem format (with product object)
         const convertedItems = cartData.items.map((item: any) => ({
-          id: item.id,
+          id: item.id || item.id.toString(), // CartItem ID from database
           product: {
             id: item.productId,
-            name: item.name,
+            name: item.productName,
             description: '',
             price: item.price,
             image: item.imageUrl || '',
@@ -94,8 +94,21 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             : item
         );
       }
-      return [...prev, { id: Date.now().toString(), product, quantity }];
+      // Use product ID as cart item ID temporarily (will be replaced with DB ID after sync)
+      return [...prev, { id: product.id, product, quantity }];
     });
+    
+    // Sync to database if authenticated and reload cart to get real IDs
+    if (isAuthenticated) {
+      cartApi.addItem(product.id, quantity)
+        .then(() => {
+          // Reload cart from DB to get actual cart item IDs
+          loadCartFromDB();
+        })
+        .catch(error => {
+          console.error('Failed to sync cart item to database:', error);
+        });
+    }
   };
 
   const removeItem = (itemId: string) => {

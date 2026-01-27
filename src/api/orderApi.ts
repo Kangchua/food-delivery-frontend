@@ -65,6 +65,7 @@ export interface CheckoutRequest {
   addressId: string;
   cartItemIds: string[];
   note?: string;
+  paymentMethod?: "cod" | "momo" | "vnpay" | "bank";
 }
 
 export interface CheckoutResponse {
@@ -72,6 +73,12 @@ export interface CheckoutResponse {
   orderCode: string;
   status: OrderStatus;
   totalAmount: number;
+}
+
+export interface ShippingFeeResponse {
+  shippingFee: number;
+  distance: number;
+  estimatedMinutes: number;
 }
 
 export const orderApi = {
@@ -151,9 +158,27 @@ export const orderApi = {
   // Thanh toán (checkout) với giỏ hàng
   checkout: async (data: CheckoutRequest): Promise<CheckoutResponse> => {
     try {
+      // Ensure IDs are properly formatted as strings for Guids
+      // Filter out any empty or invalid cart item IDs
+      const validCartItemIds = Array.isArray(data.cartItemIds) 
+        ? data.cartItemIds.filter(id => id && id.trim().length > 0)
+        : [];
+
+      if (validCartItemIds.length === 0) {
+        throw new Error("Giỏ hàng trống hoặc không có sản phẩm hợp lệ");
+      }
+
+      const checkoutData = {
+        addressId: data.addressId,
+        cartItemIds: validCartItemIds,
+        note: data.note || "",
+      };
+      
+      console.log('Checkout data:', checkoutData);
+      
       const response = await axiosClient.post<
         CheckoutResponse | ApiResult<CheckoutResponse>
-      >("/orders/checkout", data);
+      >("/orders/checkout", checkoutData);
 
       // Handle both plain object and wrapped response
       if ("orderId" in response.data && "orderCode" in response.data) {
@@ -371,6 +396,32 @@ export const orderApi = {
         throw new Error(result.message || "Lỗi hủy đơn hàng");
       }
       return result.isSuccess;
+    } catch (error: any) {
+      throw new Error(
+        error.response?.data?.message || error.message || "Lỗi kết nối server",
+      );
+    }
+  },
+
+  // Tính phí vận chuyển dựa trên địa chỉ giao hàng
+  calculateShippingFee: async (addressId: string, itemCount: number = 1): Promise<ShippingFeeResponse> => {
+    try {
+      const response = await axiosClient.get<
+        ShippingFeeResponse | ApiResult<ShippingFeeResponse>
+      >("/orders/shipping-fee", {
+        params: { addressId, itemCount },
+      });
+
+      // Handle both plain object and wrapped response
+      if ("shippingFee" in response.data) {
+        return response.data as ShippingFeeResponse;
+      }
+
+      const wrappedData = response.data as ApiResult<ShippingFeeResponse>;
+      if (!wrappedData.isSuccess) {
+        throw new Error(wrappedData.message || "Lỗi tính phí vận chuyển");
+      }
+      return wrappedData.data!;
     } catch (error: any) {
       throw new Error(
         error.response?.data?.message || error.message || "Lỗi kết nối server",
