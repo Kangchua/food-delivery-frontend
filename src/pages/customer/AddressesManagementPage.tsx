@@ -74,6 +74,14 @@ const AddressesManagementPage: React.FC = () => {
       return;
     }
 
+    if (formData.latitude === 0 || formData.longitude === 0) {
+      toast({
+        title: 'Vui lòng chọn vị trí trên bản đồ',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
       if (editingId) {
         // Update
@@ -228,15 +236,20 @@ const AddressesManagementPage: React.FC = () => {
               </div>
 
               {/* Map Button */}
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => setShowMap(!showMap)}
-              >
-                <Map className="mr-2 h-4 w-4" />
-                {showMap ? 'Ẩn bản đồ' : 'Chọn vị trí trên bản đồ'}
-              </Button>
+              <div>
+                <Label className="mb-2 flex items-center gap-1">
+                  Vị trí trên bản đồ <span className="text-red-500">*</span>
+                </Label>
+                <Button
+                  type="button"
+                  variant={formData.latitude === 0 || formData.longitude === 0 ? 'default' : 'outline'}
+                  className="w-full"
+                  onClick={() => setShowMap(!showMap)}
+                >
+                  <Map className="mr-2 h-4 w-4" />
+                  {showMap ? 'Ẩn bản đồ' : 'Chọn vị trí trên bản đồ'}
+                </Button>
+              </div>
 
               {/* Map Display */}
               {showMap && (

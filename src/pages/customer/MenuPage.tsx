@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Search, SlidersHorizontal, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -9,12 +9,23 @@ import { SkeletonList } from '@/components/common/Skeleton';
 import { productApi, Category, Product } from '@/api/dataApi';
 import useTranslation from '@/hooks/useTranslation';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
+import { UserRole } from '@/types/enum';
 
 const ITEMS_PER_PAGE = 12;
 
 const MenuPage: React.FC = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Redirect admin users away from menu page
+  useEffect(() => {
+    if (user?.role === UserRole.ADMIN) {
+      navigate('/admin', { replace: true });
+    }
+  }, [user, navigate]);
   
   const [categories, setCategories] = useState<Category[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);

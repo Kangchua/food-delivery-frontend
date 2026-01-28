@@ -1,7 +1,3 @@
-/**
- * Admin API - gọi đúng backend .NET (api/products, api/categories, api/Orders)
- * Id dùng string (Guid) cho product, category, order.
- */
 import axiosClient from './axiosClient';
 
 // ----- Backend enums (số) -----
@@ -216,6 +212,11 @@ export const adminApi = {
         isAvailable: payload.isAvailable,
         isFeatured: payload.isFeatured,
         displayOrder: payload.displayOrder,
+      });
+    },
+    updateDisplayOrder: async (id: string, newDisplayOrder: number) => {
+      await axiosClient.patch(`/products/${id}/display-order`, {
+        newDisplayOrder: newDisplayOrder,
       });
     },
     toggleAvailability: async (id: string) => {

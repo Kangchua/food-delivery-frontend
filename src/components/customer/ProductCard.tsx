@@ -5,6 +5,8 @@ import { Product } from '@/api/dataApi';
 import { formatCurrency } from '@/utils/formatters';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/context/AuthContext';
+import { UserRole } from '@/types/enum';
 import useTranslation from '@/hooks/useTranslation';
 import { cn } from '@/lib/utils';
 
@@ -16,18 +18,24 @@ interface ProductCardProps {
 const ProductCard: React.FC<ProductCardProps> = ({ product, className }) => {
   const { t } = useTranslation();
   const { addItem } = useCart();
+  const { user } = useAuth();
+  const isAdmin = user?.role === UserRole.ADMIN;
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    addItem(product);
+    if (!isAdmin) {
+      addItem(product);
+    }
   };
 
   return (
     <Link
-      to={`/product/${product.id}`}
+      to={isAdmin ? '#' : `/product/${product.id}`}
+      onClick={(e) => isAdmin && e.preventDefault()}
       className={cn(
         'group block overflow-hidden rounded-2xl bg-card shadow-card transition-all duration-300 hover:shadow-lg hover:-translate-y-1',
+        isAdmin && 'cursor-not-allowed opacity-50',
         className
       )}
     >

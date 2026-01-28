@@ -4,6 +4,8 @@ import { ArrowLeft, Minus, Plus, ShoppingCart, Star, Truck } from 'lucide-react'
 import { Button } from '@/components/ui/button';
 import MainLayout from '@/components/layout/MainLayout';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/context/AuthContext';
+import { UserRole } from '@/types/enum';
 import useTranslation from '@/hooks/useTranslation';
 import { formatCurrency } from '@/utils/formatters';
 import dataApi, { Product } from '@/api/dataApi';
@@ -14,6 +16,14 @@ const ProductDetailPage: React.FC = () => {
   const { productId } = useParams<{ productId: string }>();
   const navigate = useNavigate();
   const { addItem } = useCart();
+  const { user } = useAuth();
+
+  // Redirect admin users away from product detail page
+  useEffect(() => {
+    if (user?.role === UserRole.ADMIN) {
+      navigate('/admin', { replace: true });
+    }
+  }, [user, navigate]);
 
   const [product, setProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState(1);

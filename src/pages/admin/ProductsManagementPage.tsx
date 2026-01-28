@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Plus, Trash2, Edit2, Power, PowerOff } from 'lucide-react';
+import { Search, Plus, Trash2, Edit2, Power, PowerOff, ArrowUp, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import MainLayout from '@/components/layout/MainLayout';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
@@ -45,7 +45,9 @@ const ProductsManagementPage: React.FC = () => {
         adminApi.products.getAll({ q: search || undefined, categoryId: categoryFilter || undefined }),
         adminApi.categories.getAll(),
       ]);
-      setProducts(prodList);
+      // Sort products by displayOrder
+      const sortedProducts = prodList.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+      setProducts(sortedProducts);
       setCategories(catList);
     } catch (err) {
       console.error('Error fetching products:', err);
@@ -160,6 +162,50 @@ const ProductsManagementPage: React.FC = () => {
     }
   };
 
+  const handleMoveProduct = async (productId: string, direction: 'up' | 'down') => {
+    try {
+      const productIndex = products.findIndex(p => p.id === productId);
+      const product = products[productIndex];
+      
+      if (!product) return;
+
+      // Sort products by displayOrder to find neighbors
+      const sortedProducts = [...products].sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+      const sortedIndex = sortedProducts.findIndex(p => p.id === productId);
+
+      if (direction === 'up' && sortedIndex > 0) {
+        // Swap display order with previous product
+        const prevProduct = sortedProducts[sortedIndex - 1];
+        const tempOrder = product.displayOrder ?? 0;
+        
+        await Promise.all([
+          adminApi.products.updateDisplayOrder(productId, prevProduct.displayOrder ?? 0),
+          adminApi.products.updateDisplayOrder(prevProduct.id, tempOrder)
+        ]);
+        
+        toast.success('Đã cập nhật thứ tự hiển thị');
+      } else if (direction === 'down' && sortedIndex < sortedProducts.length - 1) {
+        // Swap display order with next product
+        const nextProduct = sortedProducts[sortedIndex + 1];
+        const tempOrder = product.displayOrder ?? 0;
+        
+        await Promise.all([
+          adminApi.products.updateDisplayOrder(productId, nextProduct.displayOrder ?? 0),
+          adminApi.products.updateDisplayOrder(nextProduct.id, tempOrder)
+        ]);
+        
+        toast.success('Đã cập nhật thứ tự hiển thị');
+      } else {
+        toast.info(direction === 'up' ? 'Đã ở đầu danh sách' : 'Đã ở cuối danh sách');
+        return;
+      }
+      
+      loadData();
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Cập nhật thứ tự thất bại');
+    }
+  };
+
   return (
     <MainLayout>
       <div className="container mx-auto px-4 py-6">
@@ -215,6 +261,7 @@ const ProductsManagementPage: React.FC = () => {
                     <th className="px-4 py-3 text-left text-sm font-semibold">{t('common.name') ?? 'Tên'}</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold">{t('admin.productCategory') ?? 'Danh mục'}</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold">{t('common.price') ?? 'Giá'}</th>
+                    <th className="px-4 py-3 text-center text-sm font-semibold">Thứ tự</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold">{t('admin.productStatus') ?? 'Trạng thái'}</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold">{t('common.actions') ?? 'Thao tác'}</th>
                   </tr>
@@ -238,6 +285,29 @@ const ProductsManagementPage: React.FC = () => {
                       </td>
                       <td className="px-4 py-3 text-sm">{product.categoryName || '-'}</td>
                       <td className="px-4 py-3 font-medium">{formatCurrency(product.price)}</td>
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleMoveProduct(product.id, 'up')}
+                            title="Tăng mức độ ưu tiên"
+                            className="text-xs h-7 w-7 p-0"
+                          >
+                            <ArrowUp className="h-3 w-3" />
+                          </Button>
+                          <span className="min-w-[30px] text-center text-sm font-medium">{products.findIndex(p => p.id === product.id) + 1}</span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleMoveProduct(product.id, 'down')}
+                            title="Giảm mức độ ưu tiên"
+                            className="text-xs h-7 w-7 p-0"
+                          >
+                            <ArrowDown className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </td>
                       <td className="px-4 py-3">
                         <span
                           className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${
@@ -365,6 +435,29 @@ const ProductsManagementPage: React.FC = () => {
                     placeholder="https://..."
                   />
                 </div>
+                {modal.isEditing && (
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">Thứ tự hiển thị</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={modal.product.displayOrder ?? 0}
+                      onChange={(e) =>
+                        setModal({ ...modal, product: { ...modal.product!, displayOrder: Number(e.target.value) || 0 } })
+                      }
+                      className="w-full rounded-lg border bg-background px-3 py-2 focus:border-primary focus:outline-none"
+                      placeholder="0"
+                    />
+                    <p className="mt-1 text-xs text-muted-foreground">Giá trị nhỏ hơn sẽ hiển thị trước (tự động sắp xếp khi tạo mới)</p>
+                  </div>
+                )}
+                {!modal.isEditing && (
+                  <div className="rounded-lg bg-muted/50 p-3">
+                    <p className="text-xs text-muted-foreground">
+                      <strong>Lưu ý:</strong> Sản phẩm mới sẽ được thêm vào cuối danh sách. Bạn có thể điều chỉnh thứ tự sau khi tạo.
+                    </p>
+                  </div>
+                )}
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2">
                     <input
