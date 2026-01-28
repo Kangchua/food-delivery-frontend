@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import RoleRoute from "./RoleRoute";
 import { UserRole } from "@/types/enum";
+import { useAuth } from "@/context/AuthContext";
 
 // Customer Pages
 import HomePage from "@/pages/customer/HomePage";
@@ -18,21 +19,24 @@ import SecurityPage from "@/pages/customer/SecurityPage";
 
 const CustomerRoutes = () => {
   const location = useLocation();
+  const { user } = useAuth();
 
   // Handle root-level routes (when accessed from /menu, /cart, etc.)
   const handleRootLevelRoutes = () => {
     console.log(location.pathname);
     const pathname = location.pathname;
 
-    if (pathname === "/menu") return <MenuPage />;
-    if (pathname === "/cart") return <CartPage />;
+    // Routes restricted to customers only
+    if (pathname === "/menu" && user?.role !== UserRole.ADMIN) return <MenuPage />;
+    if (pathname === "/cart" && user?.role !== UserRole.ADMIN) return <CartPage />;
+    if (pathname.match(/^\/product\//) && user?.role !== UserRole.ADMIN) return <ProductDetailPage />;
+    
     if (pathname === "/checkout") return <CheckoutPage />;
     if (pathname === "/profile") return <ProfilePage />;
     if (pathname === "/profile/addresses") return <AddressesManagementPage />;
     if (pathname === "/profile/notifications") return <NotificationsPage />;
     if (pathname === "/profile/security") return <SecurityPage />;
     if (pathname === "/payment-result") return <PaymentResultPage />;
-    if (pathname.match(/^\/product\//)) return <ProductDetailPage />;
 
     return null;
   };

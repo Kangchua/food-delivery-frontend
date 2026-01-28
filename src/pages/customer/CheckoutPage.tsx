@@ -31,6 +31,7 @@ const CheckoutPage: React.FC = () => {
   const [note, setNote] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
   const [shippingFee, setShippingFee] = useState(0);
+  const [distance, setDistance] = useState(0);
   const [isCalculatingFee, setIsCalculatingFee] = useState(false);
 
   useEffect(() => {
@@ -64,10 +65,12 @@ const CheckoutPage: React.FC = () => {
       try {
         const feeData = await orderApi.calculateShippingFee(selectedAddressId, items.length);
         setShippingFee(feeData.shippingFee);
+        setDistance(feeData.distance);
       } catch (error: any) {
         console.error('Failed to calculate shipping fee:', error);
         // Use a reasonable default based on distance
         setShippingFee(15000);
+        setDistance(0);
       } finally {
         setIsCalculatingFee(false);
       }
@@ -182,9 +185,9 @@ const CheckoutPage: React.FC = () => {
                                 <p className="font-medium">{addr.label} - {addr.receiverName}</p>
                                 <p className="text-sm text-muted-foreground">{addr.fullAddress}</p>
                                 <p className="text-xs text-muted-foreground">{addr.phoneNumber}</p>
-                                {addr.latitude && addr.longitude && (
+                                {selectedAddressId === addr.id && distance > 0 && (
                                   <div className="mt-2 text-xs text-muted-foreground">
-                                    Đã tính phí giao hàng
+                                    Khoảng cách: {distance.toFixed(1)} km
                                   </div>
                                 )}
                               </div>

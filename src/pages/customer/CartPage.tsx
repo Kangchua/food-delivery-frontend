@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import MainLayout from '@/components/layout/MainLayout';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/context/AuthContext';
+import { UserRole } from '@/types/enum';
 import useTranslation from '@/hooks/useTranslation';
 import { formatCurrency } from '@/utils/formatters';
 
@@ -12,7 +13,14 @@ const CartPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { items, subtotal, deliveryFee, total, updateQuantity, removeItem } = useCart();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+
+  // Redirect admin users away from cart page
+  useEffect(() => {
+    if (user?.role === UserRole.ADMIN) {
+      navigate('/admin', { replace: true });
+    }
+  }, [user, navigate]);
 
   const handleCheckout = () => {
     if (!isAuthenticated) {

@@ -5,6 +5,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import useTranslation from '@/hooks/useTranslation';
 import { adminApi } from '@/api/adminApi';
 import { formatCurrency } from '@/utils/formatters';
+import { OrderStatus } from '@/types/enum';
 
 const AdminDashboard: React.FC = () => {
   const { t } = useTranslation();
@@ -23,10 +24,12 @@ const AdminDashboard: React.FC = () => {
         ]);
         setTotalOrders(orderRes.meta?.totalCount ?? orderRes.total ?? 0);
         setTotalProducts(prodList.length);
-        // Doanh thu: lấy trang 1 với size 50 rồi cộng tổng (hoặc để "-" nếu không có API)
-        const firstPage = await adminApi.orders.getAdminList({ page: 1, pageSize: 50 });
-        const sum = firstPage.items.reduce((s, o) => s + o.totalAmount, 0);
-        setTotalRevenue(firstPage.items.length > 0 ? sum : null);
+        // Doanh thu: lấy tất cả đơn hàng đã giao thành công (status = Completed = 7)
+        const completedOrders = await adminApi.orders.getAdminList({ page: 1, pageSize: 999 });
+        const completedSum = completedOrders.items
+          .filter((o) => o.status === OrderStatus.Completed)
+          .reduce((s, o) => s + o.totalAmount, 0);
+        setTotalRevenue(completedSum > 0 ? completedSum : null);
       } catch (e) {
         console.error(e);
       } finally {
