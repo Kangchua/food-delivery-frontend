@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
 import useTranslation from '@/hooks/useTranslation';
+import { NotificationBell } from '@/components/common/NotificationBell';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -107,6 +108,9 @@ const Header: React.FC = () => {
           >
             <Search className="h-5 w-5" />
           </Button>
+
+          {/* Notification Bell - Authenticated only */}
+          {isAuthenticated && <NotificationBell />}
 
           {/* Cart - Customer only */}
           {(!user || user.role === 'customer') && (
