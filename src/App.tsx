@@ -16,6 +16,7 @@ import ForgotPasswordPage from "@/pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "@/pages/auth/ResetPasswordPage";
 
 import NotFound from "./pages/NotFound";
+import ShipperDashboard from "./pages/shipper/ShipperDashboard";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +67,7 @@ const App = () => (
               <Route path="/auth/register" element={<RegisterPage />} />
               <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/test-shipper" element={<ShipperDashboard />} />
               
               {/* Customer Routes - Protected */}
               <Route path="/customer/*" element={

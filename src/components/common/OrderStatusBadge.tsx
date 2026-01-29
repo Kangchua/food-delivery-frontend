@@ -23,7 +23,9 @@ const OrderStatusBadge: React.FC<OrderStatusBadgeProps> = ({ status, className }
       )}
     >
       {t(statusKey)}
+      className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(status)}`}
     </span>
+    
   );
 };
 

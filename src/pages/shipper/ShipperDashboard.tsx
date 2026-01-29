@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
-import useTranslation from '@/hooks/useTranslation';
 import { Package, TrendingUp, Clock, CheckCircle, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { shipperApi } from '@/api/shipperApi';
+import shipperApi from '@/api/shipperApi';
 import { formatCurrency } from '@/utils/formatters';
 import { toast } from 'sonner';
 
+// 1. Interface chuẩn cho Dashboard
 interface DashboardStats {
   totalDeliveries: number;
   completedDeliveries: number;
@@ -17,94 +17,64 @@ interface DashboardStats {
   averageRating: number;
 }
 
-interface RecentOrder {
-  id: number;
-  customerName: string;
-  deliveryAddress: string;
-  status: string;
-  totalAmount: number;
-}
+// 2. Hàm bổ trợ - Đã được đưa ra ngoài để tối ưu và không bị mờ
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'Completed': return 'bg-green-100 text-green-600';
+    case 'Cancelled': return 'bg-red-100 text-red-600';
+    case 'Shipping': return 'bg-blue-100 text-blue-600';
+    case 'Pending': return 'bg-yellow-100 text-yellow-600';
+    default: return 'bg-gray-100 text-gray-600';
+  }
+};
 
 const ShipperDashboard: React.FC = () => {
-  const { t } = useTranslation();
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchDashboard();
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        // Gọi API thật
+        const [statsRes, ordersRes] = await Promise.all([
+          shipperApi.getDashboard(),
+          shipperApi.getAssignedOrders()
+        ]);
+
+        setStats(statsRes);
+        const ordersList = Array.isArray(ordersRes) ? ordersRes : (ordersRes?.data || []);
+        setRecentOrders(ordersList.slice(0, 5));
+
+      } catch (err) {
+        console.error('Lỗi Dashboard:', err);
+        toast.error('Không thể tải dữ liệu bảng điều khiển.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
-  const fetchDashboard = async () => {
-    try {
-      setLoading(true);
-
-      // Fetch dashboard stats
-      try {
-        const dashboardData = await shipperApi.getDashboard();
-        setStats(dashboardData);
-      } catch (err) {
-        console.error('Error fetching dashboard:', err);
-      }
-
-      // Fetch recent assigned orders
-      try {
-        const ordersData = await shipperApi.getAssignedOrders();
-        const ordersList = (Array.isArray(ordersData) ? ordersData : ordersData?.data || []).slice(0, 5);
-        setRecentOrders(ordersList);
-      } catch (err) {
-        console.error('Error fetching orders:', err);
-      }
-    } catch (err) {
-      console.error('Error fetching dashboard:', err);
-      toast.error(t('error.fetchFailed') || 'Failed to fetch dashboard');
-    } finally {
-      setLoading(false);
-    }
+  // Giá trị mặc định
+  const displayStats = stats || {
+    totalDeliveries: 0, completedDeliveries: 0, pendingDeliveries: 0,
+    deliveryInProgress: 0, earningToday: 0, averageRating: 5
   };
-
-  const defaultStats: DashboardStats = {
-    totalDeliveries: 0,
-    completedDeliveries: 0,
-    pendingDeliveries: 0,
-    deliveryInProgress: 0,
-    earningToday: 0,
-    averageRating: 0,
-  };
-
-  const displayStats = stats || defaultStats;
 
   const statCards = [
-    {
-      label: t('shipper.pendingDeliveries') || 'Pending',
-      value: displayStats.pendingDeliveries,
-      icon: Clock,
-      color: 'bg-warning/10 text-warning',
-    },
-    {
-      label: t('shipper.inProgress') || 'In Progress',
-      value: displayStats.deliveryInProgress,
-      icon: Package,
-      color: 'bg-info/10 text-info',
-    },
-    {
-      label: t('shipper.completedToday') || 'Completed Today',
-      value: displayStats.completedDeliveries,
-      icon: CheckCircle,
-      color: 'bg-success/10 text-success',
-    },
-    {
-      label: t('shipper.earningToday') || 'Earning Today',
-      value: formatCurrency(displayStats.earningToday),
-      icon: TrendingUp,
-      color: 'bg-primary/10 text-primary',
-    },
+    { label: 'Chờ lấy hàng', value: displayStats.pendingDeliveries, icon: Clock, color: 'bg-yellow-100 text-yellow-700' },
+    { label: 'Đang giao', value: displayStats.deliveryInProgress, icon: Package, color: 'bg-blue-100 text-blue-700' },
+    { label: 'Hoàn thành', value: displayStats.completedDeliveries, icon: CheckCircle, color: 'bg-green-100 text-green-700' },
+    { label: 'Thu nhập hôm nay', value: formatCurrency(displayStats.earningToday), icon: TrendingUp, color: 'bg-purple-100 text-purple-700' },
   ];
 
   return (
     <MainLayout>
       <div className="container mx-auto px-4 py-6">
-        <h1 className="mb-6 text-2xl font-bold">{t('shipper.dashboard') || 'Delivery Dashboard'}</h1>
+        <h1 className="mb-6 text-2xl font-bold">Bảng điều khiển Shipper</h1>
 
         {loading ? (
           <div className="flex min-h-64 items-center justify-center">
@@ -112,109 +82,54 @@ const ShipperDashboard: React.FC = () => {
           </div>
         ) : (
           <>
-            {/* Stats Grid */}
             <div className="mb-8 grid gap-4 md:grid-cols-4">
               {statCards.map((stat) => (
-                <div key={stat.label} className={`rounded-xl p-6 shadow-card ${stat.color}`}>
-                  <div className="mb-3 inline-block rounded-lg bg-white/20 p-3">
+                <div key={stat.label} className={`rounded-xl p-6 shadow-sm ${stat.color}`}>
+                  <div className="mb-3 inline-block rounded-lg bg-white/50 p-3">
                     <stat.icon className="h-6 w-6" />
                   </div>
                   <p className="text-2xl font-bold">{stat.value}</p>
-                  <p className="text-sm opacity-75">{stat.label}</p>
+                  <p className="text-sm opacity-80">{stat.label}</p>
                 </div>
               ))}
             </div>
 
-            {/* Overall Stats */}
-            <div className="mb-8 grid gap-4 md:grid-cols-2">
-              <div className="rounded-lg bg-card p-6 shadow-card">
-                <h3 className="mb-3 font-bold">{t('shipper.totalDeliveries') || 'Total Deliveries'}</h3>
-                <p className="text-4xl font-bold text-primary">{displayStats.totalDeliveries}</p>
-                <p className="text-sm text-muted-foreground">
-                  {t('shipper.completed')}: {displayStats.completedDeliveries}
-                </p>
-              </div>
-
-              <div className="rounded-lg bg-card p-6 shadow-card">
-                <h3 className="mb-3 font-bold">{t('shipper.rating') || 'Your Rating'}</h3>
-                <p className="text-4xl font-bold text-warning">
-                  {displayStats.averageRating.toFixed(1)} ⭐
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {t('shipper.basedonDeliveries', { count: displayStats.totalDeliveries })}
-                </p>
-              </div>
-            </div>
-
-            {/* Recent Orders */}
-            <div className="rounded-lg bg-card p-6 shadow-card">
+            <div className="rounded-lg bg-white p-6 shadow-md">
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-lg font-bold">{t('shipper.recentOrders') || 'Recent Orders'}</h2>
+                <h2 className="text-lg font-bold">Đơn hàng mới gán</h2>
                 <Link to="/shipper/orders">
-                  <Button size="sm" variant="outline">
-                    {t('common.viewAll')}
-                  </Button>
+                  <Button size="sm" variant="outline">Xem tất cả</Button>
                 </Link>
               </div>
 
               {recentOrders.length === 0 ? (
-                <div className="flex min-h-48 items-center justify-center text-muted-foreground">
-                  <div className="text-center">
-                    <Package className="mx-auto mb-3 h-12 w-12 opacity-50" />
-                    <p>{t('shipper.noRecentOrders') || 'No recent orders'}</p>
-                  </div>
-                </div>
+                <div className="text-center py-10 text-gray-400">Không có đơn hàng nào.</div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {recentOrders.map((order) => (
-                    <div key={order.id} className="flex items-center justify-between border-b pb-3">
+                    <div key={order.id} className="flex items-center justify-between border-b pb-4">
                       <div className="flex-1">
-                        <div className="mb-1 flex items-center gap-2">
-                          <p className="font-bold">Order #{order.id}</p>
-                          <span className={`inline-block rounded-full px-2 py-1 text-xs font-semibold ${
-                            order.status === 'pending' ? 'bg-warning/10 text-warning' :
-                            order.status === 'delivery' ? 'bg-info/10 text-info' :
-                            'bg-success/10 text-success'
-                          }`}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-bold">Đơn #{order.id?.toString().slice(0, 8)}</p>
+                          
+                          {/* ĐÃ SỬA: Gọi hàm getStatusColor ở đây để nó hết mờ và hiển thị màu chuẩn */}
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
                             {order.status}
                           </span>
+                          
                         </div>
-                        <p className="text-sm text-muted-foreground">{order.customerName}</p>
-                        <p className="text-xs text-muted-foreground line-clamp-1">
-                          {order.deliveryAddress}
-                        </p>
+                        <p className="text-sm text-gray-600">{order.customerName || 'Khách lẻ'}</p>
                       </div>
-                      <div className="ml-4 flex items-center gap-3">
-                        <div className="text-right">
-                          <p className="font-bold">{formatCurrency(order.totalAmount)}</p>
-                        </div>
+                      <div className="text-right">
+                        <p className="font-bold text-primary">{formatCurrency(order.totalAmount)}</p>
                         <Link to={`/shipper/orders/${order.id}`}>
-                          <Button size="sm" variant="ghost">
-                            <Eye className="h-4 w-4" />
-                          </Button>
+                          <Button size="sm" variant="ghost"><Eye className="h-4 w-4" /></Button>
                         </Link>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-            </div>
-
-            {/* Quick Actions */}
-            <div className="mt-8 grid gap-4 md:grid-cols-3">
-              <Link to="/shipper/orders">
-                <Button className="gradient-primary w-full">
-                  {t('shipper.viewAllOrders') || 'View All Orders'}
-                </Button>
-              </Link>
-              <Link to="/shipper/history">
-                <Button variant="outline" className="w-full">
-                  {t('shipper.deliveryHistory') || 'Delivery History'}
-                </Button>
-              </Link>
-              <Button variant="outline" className="w-full">
-                {t('shipper.contactSupport') || 'Contact Support'}
-              </Button>
             </div>
           </>
         )}
