@@ -16,6 +16,7 @@ import ProductDetailPage from "@/pages/customer/ProductDetailPage";
 import AddressesManagementPage from "@/pages/customer/AddressesManagementPage";
 import NotificationsPage from "@/pages/customer/NotificationsPage";
 import SecurityPage from "@/pages/customer/SecurityPage";
+import ReviewHistoryPage from "@/pages/customer/ReviewPage";
 
 const CustomerRoutes = () => {
   const location = useLocation();
@@ -27,10 +28,13 @@ const CustomerRoutes = () => {
     const pathname = location.pathname;
 
     // Routes restricted to customers only
-    if (pathname === "/menu" && user?.role !== UserRole.ADMIN) return <MenuPage />;
-    if (pathname === "/cart" && user?.role !== UserRole.ADMIN) return <CartPage />;
-    if (pathname.match(/^\/product\//) && user?.role !== UserRole.ADMIN) return <ProductDetailPage />;
-    
+    if (pathname === "/menu" && user?.role !== UserRole.ADMIN)
+      return <MenuPage />;
+    if (pathname === "/cart" && user?.role !== UserRole.ADMIN)
+      return <CartPage />;
+    if (pathname.match(/^\/product\//) && user?.role !== UserRole.ADMIN)
+      return <ProductDetailPage />;
+
     if (pathname === "/checkout") return <CheckoutPage />;
     if (pathname === "/profile") return <ProfilePage />;
     if (pathname === "/profile/addresses") return <AddressesManagementPage />;
@@ -60,6 +64,7 @@ const CustomerRoutes = () => {
         {/* Xử lý /orders và /orders/:id */}
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/orders/:id" element={<OrderDetailPage />} />
+        <Route path="/review" element={<ReviewHistoryPage />} />
 
         {/* Xử lý Profile */}
         <Route path="/profile" element={<ProfilePage />} />
