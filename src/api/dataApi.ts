@@ -18,6 +18,7 @@ export interface Product {
   rating: number;
   soldCount: number;
   isAvailable: boolean;
+  isFeatured?: boolean;
   createdAt?: string;
   displayOrder?: number;
 }
@@ -88,6 +89,7 @@ const mapProductResponse = (data: any): Product => {
     rating: data.rating || data.Rating || 0,
     soldCount: data.soldCount || data.SoldCount || 0,
     isAvailable: data.isAvailable !== undefined ? data.isAvailable : data.IsAvailable !== undefined ? data.IsAvailable : true,
+    isFeatured: data.isFeatured !== undefined ? data.isFeatured : data.IsFeatured !== undefined ? data.IsFeatured : false,
     createdAt: data.createdAt || data.CreatedAt,
     displayOrder: data.displayOrder !== undefined ? data.displayOrder : data.DisplayOrder !== undefined ? data.DisplayOrder : 0,
   };
@@ -196,6 +198,33 @@ export const productApi = {
         const wrappedData = response.data as ApiResult<any>;
         if (!wrappedData.isSuccess) {
           throw new Error(wrappedData.message || 'Tìm kiếm sản phẩm thất bại');
+        }
+        products = wrappedData.data || [];
+      }
+      
+      // Map each product from backend format to frontend format
+      return products.map(mapProductResponse);
+    } catch (error: any) {
+      const message =
+        error.response?.data?.message || error.message || 'Lỗi kết nối server';
+      throw new Error(message);
+    }
+  },
+
+  // Lấy các sản phẩm nổi bật (featured products)
+  getFeaturedProducts: async (): Promise<Product[]> => {
+    try {
+      const response = await axiosClient.get<Product[] | ApiResult<Product[]>>('/products/featured');
+      
+      // Handle both plain array and wrapped response
+      let products: any[] = [];
+      if (Array.isArray(response.data)) {
+        products = response.data;
+      } else {
+        // Handle wrapped ApiResult format
+        const wrappedData = response.data as ApiResult<any>;
+        if (!wrappedData.isSuccess) {
+          throw new Error(wrappedData.message || 'Lấy sản phẩm nổi bật thất bại');
         }
         products = wrappedData.data || [];
       }

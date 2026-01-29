@@ -25,15 +25,13 @@ export const formatShortDate = (dateString: string): string => {
   }).format(date);
 };
 
-export const getStatusColor = (status: string): string => {
-  const colors: Record<string, string> = {
-    pending: 'bg-warning/10 text-warning',
-    confirmed: 'bg-info/10 text-info',
-    preparing: 'bg-info/10 text-info',
-    ready: 'bg-success/10 text-success',
-    outForDelivery: 'bg-primary/10 text-primary',
-    delivered: 'bg-success/10 text-success',
-    cancelled: 'bg-destructive/10 text-destructive',
-  };
-  return colors[status] || 'bg-muted text-muted-foreground';
+export const getStatusColor = (status: number): string => {
+  switch (status) {
+    case 1: return 'bg-yellow-100 text-yellow-800'; // Pending
+    case 3: return 'bg-blue-100 text-blue-800';   // Confirmed
+    case 6: return 'bg-orange-100 text-orange-800'; // Shipping
+    case 7: return 'bg-green-100 text-green-800';  // Completed
+    case 8: return 'bg-red-100 text-red-800';      // Cancelled
+    default: return 'bg-gray-100 text-gray-800';
+  }
 };

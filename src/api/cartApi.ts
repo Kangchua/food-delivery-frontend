@@ -20,13 +20,22 @@ export interface ApiResult<T = Record<string, unknown>> {
 
 export const cartApi = {
   // Lấy giỏ hàng
-  get: async (): Promise<Cart> => {
+  get: async (): Promise<any> => {
     try {
-      const response = await axiosClient.get<ApiResult<Cart>>('/cart');
+      const response = await axiosClient.get<any>('/cart');
       if (!response.data.isSuccess) {
         throw new Error(response.data.message || 'Lỗi lấy giỏ hàng');
       }
-      return response.data.data || { items: [], total: 0 };
+      // Backend returns PagedResponse<CartItemDto>
+      // response.data.data.data contains the items array
+      const cartData = response.data.data;
+      if (cartData && cartData.data) {
+        return {
+          items: cartData.data,
+          total: 0,
+        };
+      }
+      return { items: [], total: 0 };
     } catch (error: any) {
       throw new Error(error.response?.data?.message || error.message || 'Lỗi kết nối server');
     }
@@ -35,7 +44,7 @@ export const cartApi = {
   // Thêm sản phẩm vào giỏ
   addItem: async (productId: string, quantity: number): Promise<Cart> => {
     try {
-      const response = await axiosClient.post<ApiResult<Cart>>('/cart/items', {
+      const response = await axiosClient.post<ApiResult<Cart>>('/cart', {
         productId,
         quantity,
       });
@@ -51,8 +60,7 @@ export const cartApi = {
   // Cập nhật số lượng sản phẩm
   updateItem: async (productId: string, quantity: number): Promise<Cart> => {
     try {
-      const response = await axiosClient.put<ApiResult<Cart>>('/cart/items', {
-        productId,
+      const response = await axiosClient.patch<ApiResult<Cart>>(`/cart/item/${productId}`, {
         quantity,
       });
       if (!response.data.isSuccess) {
@@ -67,7 +75,7 @@ export const cartApi = {
   // Xóa sản phẩm khỏi giỏ
   removeItem: async (productId: string): Promise<Cart> => {
     try {
-      const response = await axiosClient.delete<ApiResult<Cart>>(`/cart/items/${productId}`);
+      const response = await axiosClient.delete<ApiResult<Cart>>(`/cart/item/${productId}`);
       if (!response.data.isSuccess) {
         throw new Error(response.data.message || 'Lỗi xóa sản phẩm khỏi giỏ');
       }
@@ -86,6 +94,21 @@ export const cartApi = {
       }
     } catch (error: any) {
       throw new Error(error.response?.data?.message || error.message || 'Lỗi kết nối server');
+    }
+  },
+
+  // Lưu toàn bộ giỏ hàng lên server
+  saveCart: async (items: CartItem[]): Promise<void> => {
+    try {
+      const response = await axiosClient.post<ApiResult>('/cart/save', {
+        items,
+      });
+      if (!response.data.isSuccess) {
+        throw new Error(response.data.message || 'Lỗi lưu giỏ hàng');
+      }
+    } catch (error: any) {
+      console.error('Error saving cart:', error);
+      // Không throw để không block logout
     }
   },
 };

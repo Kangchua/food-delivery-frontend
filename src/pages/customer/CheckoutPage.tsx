@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, CreditCard, Truck, CheckCircle, Navigation } from 'lucide-react';
+import { MapPin, CreditCard, Truck, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -14,15 +13,14 @@ import { userApi } from '@/api/userApi';
 import useTranslation from '@/hooks/useTranslation';
 import { formatCurrency } from '@/utils/formatters';
 import { useToast } from '@/hooks/use-toast';
-import { calculateDistance, formatDistance } from '@/utils/locationUtils';
-import type { Address } from '@/types/user.type';
+import type { Address } from '@/api/userApi';
 
 type PaymentMethod = 'cod' | 'momo' | 'vnpay' | 'bank';
 
 const CheckoutPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { items, subtotal, deliveryFee, total, clearCart } = useCart();
+  const { items, subtotal, clearCart } = useCart();
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -30,9 +28,11 @@ const CheckoutPage: React.FC = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
-  const [address, setAddress] = useState('');
   const [note, setNote] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
+  const [shippingFee, setShippingFee] = useState(0);
+  const [distance, setDistance] = useState(0);
+  const [isCalculatingFee, setIsCalculatingFee] = useState(false);
 
   useEffect(() => {
     const fetchAddresses = async () => {
@@ -53,6 +53,34 @@ const CheckoutPage: React.FC = () => {
     }
   }, [user?.id]);
 
+  // Calculate shipping fee when address or items count changes
+  useEffect(() => {
+    if (!selectedAddressId || items.length === 0) {
+      setShippingFee(0);
+      return;
+    }
+
+    const calculateFee = async () => {
+      setIsCalculatingFee(true);
+      try {
+        const feeData = await orderApi.calculateShippingFee(selectedAddressId, items.length);
+        setShippingFee(feeData.shippingFee);
+        setDistance(feeData.distance);
+      } catch (error: any) {
+        console.error('Failed to calculate shipping fee:', error);
+        // Use a reasonable default based on distance
+        setShippingFee(15000);
+        setDistance(0);
+      } finally {
+        setIsCalculatingFee(false);
+      }
+    };
+
+    calculateFee();
+  }, [selectedAddressId, items.length]);
+
+  const total = subtotal + shippingFee;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -66,12 +94,16 @@ const CheckoutPage: React.FC = () => {
       return;
     }
 
+    console.log('Items in cart:', items);
+    console.log('Cart item IDs:', items.map(item => item.id));
+
     setIsLoading(true);
     try {
       await orderApi.checkout({
         addressId: selectedAddressId,
         cartItemIds: items.map(item => item.id),
         note: note || undefined,
+        paymentMethod: paymentMethod,
       });
 
       setIsSuccess(true);
@@ -153,14 +185,9 @@ const CheckoutPage: React.FC = () => {
                                 <p className="font-medium">{addr.label} - {addr.receiverName}</p>
                                 <p className="text-sm text-muted-foreground">{addr.fullAddress}</p>
                                 <p className="text-xs text-muted-foreground">{addr.phoneNumber}</p>
-                                {addr.latitude && addr.longitude && (
-                                  <div className="mt-2 flex items-center gap-1 text-xs text-success">
-                                    <Navigation className="h-3 w-3" />
-                                    <span>
-                                      Cách: {formatDistance(
-                                        calculateDistance(16.0471, 108.2068, addr.latitude, addr.longitude)
-                                      )}
-                                    </span>
+                                {selectedAddressId === addr.id && distance > 0 && (
+                                  <div className="mt-2 text-xs text-muted-foreground">
+                                    Khoảng cách: {distance.toFixed(1)} km
                                   </div>
                                 )}
                               </div>
@@ -174,6 +201,26 @@ const CheckoutPage: React.FC = () => {
                     </div>
                   )}
                 </div>
+              </div>
+
+              {/* Payment Method */}
+              <div className="rounded-xl bg-card p-6 shadow-card">
+                <div className="mb-4 flex items-center gap-2">
+                  <CreditCard className="h-5 w-5 text-primary" />
+                  <h2 className="text-lg font-bold">{t('checkout.paymentMethod')}</h2>
+                </div>
+                <RadioGroup value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}>
+                  <div className="space-y-2">
+                    <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-border p-3 transition-colors hover:border-primary/50">
+                      <RadioGroupItem value="cod" />
+                      <span className="font-medium">COD (Thanh toán khi nhận hàng)</span>
+                    </label>
+                    <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-border p-3 transition-colors hover:border-primary/50">
+                      <RadioGroupItem value="momo" />
+                      <span className="font-medium">Momo</span>
+                    </label>
+                  </div>
+                </RadioGroup>
               </div>
 
               {/* Order Note */}
@@ -225,7 +272,7 @@ const CheckoutPage: React.FC = () => {
                   </div>
                   <div className="flex justify-between text-muted-foreground">
                     <span>{t('customer.deliveryFee')}</span>
-                    <span>{formatCurrency(deliveryFee)}</span>
+                    <span>{isCalculatingFee ? 'Đang tính...' : formatCurrency(shippingFee)}</span>
                   </div>
                 </div>
 

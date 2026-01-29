@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { Product, CartItem } from '@/api/dataApi';
+import { useAuth } from '@/context/AuthContext';
+import cartApi from '@/api/cartApi';
 
 interface CartContextType {
   items: CartItem[];
@@ -18,10 +20,60 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 const DELIVERY_FEE = 15000;
 
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { isAuthenticated } = useAuth();
   const [items, setItems] = useState<CartItem[]>(() => {
     const saved = localStorage.getItem('cart');
     return saved ? JSON.parse(saved) : [];
   });
+
+  // Load cart from DB when user logs in
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadCartFromDB();
+    }
+  }, [isAuthenticated]);
+
+  // Clear cart when user logs out
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setItems([]);
+      // Don't remove from localStorage until they log back in
+    }
+  }, [isAuthenticated]);
+
+  const loadCartFromDB = async () => {
+    try {
+      const cartData = await cartApi.get();
+      
+      if (cartData && cartData.items && Array.isArray(cartData.items)) {
+        // Convert CartItemDto to CartItem format (with product object)
+        const convertedItems = cartData.items.map((item: any) => ({
+          id: item.id || item.id.toString(), // CartItem ID from database
+          product: {
+            id: item.productId,
+            name: item.productName,
+            description: '',
+            price: item.price,
+            image: item.imageUrl || '',
+            categoryId: item.categoryId,
+            categoryName: item.categoryName,
+            rating: 0,
+            soldCount: 0,
+            isAvailable: true,
+          },
+          quantity: item.quantity,
+        }));
+        setItems(convertedItems);
+      }
+    } catch (error) {
+      console.error('Error loading cart from DB:', error);
+      // Fallback to localStorage if DB fails
+      const saved = localStorage.getItem('cart');
+      if (saved) {
+        setItems(JSON.parse(saved));
+      }
+    }
+  };
 
   useEffect(() => {
     localStorage.setItem('cart', JSON.stringify(items));
@@ -42,8 +94,21 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             : item
         );
       }
-      return [...prev, { id: Date.now().toString(), product, quantity }];
+      // Use product ID as cart item ID temporarily (will be replaced with DB ID after sync)
+      return [...prev, { id: product.id, product, quantity }];
     });
+    
+    // Sync to database if authenticated and reload cart to get real IDs
+    if (isAuthenticated) {
+      cartApi.addItem(product.id, quantity)
+        .then(() => {
+          // Reload cart from DB to get actual cart item IDs
+          loadCartFromDB();
+        })
+        .catch(error => {
+          console.error('Failed to sync cart item to database:', error);
+        });
+    }
   };
 
   const removeItem = (itemId: string) => {
