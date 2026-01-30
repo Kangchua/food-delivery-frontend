@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Trash2, Edit2 } from 'lucide-react';
+import { Plus, Trash2, Edit2, ArrowUp, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import MainLayout from '@/components/layout/MainLayout';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
@@ -37,10 +37,11 @@ const CategoriesManagementPage: React.FC = () => {
     try {
       setLoading(true);
       const list = await adminApi.categories.getAll();
-      setCategories(list);
+      const sortedList = list.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+      setCategories(sortedList);
     } catch (err) {
       console.error('Error fetching categories:', err);
-      toast.error(t('error.fetchFailed') ?? 'Không tải được danh mục');
+      toast.error('Không tải được danh mục');
     } finally {
       setLoading(false);
     }
@@ -69,7 +70,7 @@ const CategoriesManagementPage: React.FC = () => {
   const handleSaveCategory = async () => {
     const c = modal.category;
     if (!c?.name?.trim()) {
-      toast.error(t('validation.nameRequired') ?? 'Nhập tên danh mục');
+      toast.error('Nhập tên danh mục');
       return;
     }
     try {
@@ -92,7 +93,7 @@ const CategoriesManagementPage: React.FC = () => {
       handleCloseModal();
       fetchCategories();
     } catch (err: any) {
-      toast.error(err?.message ?? (t('error.saveFailed') ?? 'Lưu thất bại'));
+      toast.error(err?.message ?? 'Lưu thất bại');
     } finally {
       setSaving(false);
     }
@@ -116,9 +117,66 @@ const CategoriesManagementPage: React.FC = () => {
       setDeleteConfirm({ isOpen: false, categoryId: null, categoryName: null });
       fetchCategories();
     } catch (err: any) {
-      toast.error(err?.message ?? (t('error.deleteFailed') ?? 'Xóa thất bại'));
+      toast.error(err?.message ?? 'Xóa thất bại');
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleMoveCategory = async (categoryId: string, direction: 'up' | 'down') => {
+    try {
+      const sortedCategories = [...categories].sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+      const sortedIndex = sortedCategories.findIndex(c => c.id === categoryId);
+      const category = sortedCategories[sortedIndex];
+      
+      if (!category) return;
+
+      if (direction === 'up' && sortedIndex > 0) {
+        const prevCategory = sortedCategories[sortedIndex - 1];
+        const currentOrder = category.displayOrder ?? 0;
+        const prevOrder = prevCategory.displayOrder ?? 0;
+        
+        await Promise.all([
+          adminApi.categories.update(categoryId, {
+            name: category.name,
+            description: category.description ?? null,
+            displayOrder: prevOrder,
+          }),
+          adminApi.categories.update(prevCategory.id, {
+            name: prevCategory.name,
+            description: prevCategory.description ?? null,
+            displayOrder: currentOrder,
+          })
+        ]);
+        
+        toast.success('Đã cập nhật thứ tự hiển thị');
+      } else if (direction === 'down' && sortedIndex < sortedCategories.length - 1) {
+        const nextCategory = sortedCategories[sortedIndex + 1];
+        const currentOrder = category.displayOrder ?? 0;
+        const nextOrder = nextCategory.displayOrder ?? 0;
+        
+        await Promise.all([
+          adminApi.categories.update(categoryId, {
+            name: category.name,
+            description: category.description ?? null,
+            displayOrder: nextOrder,
+          }),
+          adminApi.categories.update(nextCategory.id, {
+            name: nextCategory.name,
+            description: nextCategory.description ?? null,
+            displayOrder: currentOrder,
+          })
+        ]);
+        
+        toast.success('Đã cập nhật thứ tự hiển thị');
+      } else {
+        toast.info(direction === 'up' ? 'Đã ở đầu danh sách' : 'Đã ở cuối danh sách');
+        return;
+      }
+      
+      fetchCategories();
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Cập nhật thứ tự thất bại');
     }
   };
 
@@ -150,7 +208,30 @@ const CategoriesManagementPage: React.FC = () => {
                 key={category.id}
                 className="rounded-lg border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
               >
-                <h3 className="mb-2 text-lg font-semibold">{category.name}</h3>
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">{category.name}</h3>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleMoveCategory(category.id, 'up')}
+                      title="Tăng mức độ ưu tiên"
+                      className="text-xs h-7 w-7 p-0"
+                    >
+                      <ArrowUp className="h-3 w-3" />
+                    </Button>
+                    <span className="min-w-[30px] text-center text-xs font-medium">{category.displayOrder ?? 0}</span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleMoveCategory(category.id, 'down')}
+                      title="Giảm mức độ ưu tiên"
+                      className="text-xs h-7 w-7 p-0"
+                    >
+                      <ArrowDown className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
                 {category.description && (
                   <p className="mb-4 line-clamp-2 text-sm text-muted-foreground">
                     {category.description}
@@ -211,7 +292,7 @@ const CategoriesManagementPage: React.FC = () => {
                       setModal({ ...modal, category: { ...modal.category!, name: e.target.value } })
                     }
                     className="w-full rounded-lg border bg-background px-3 py-2 focus:border-primary focus:outline-none"
-                    placeholder={t('common.enterName') ?? 'Nhập tên danh mục'}
+                    placeholder={t('common.name') ?? 'Nhập tên danh mục'}
                   />
                 </div>
                 <div>
@@ -222,7 +303,7 @@ const CategoriesManagementPage: React.FC = () => {
                       setModal({ ...modal, category: { ...modal.category!, description: e.target.value } })
                     }
                     className="w-full rounded-lg border bg-background px-3 py-2 focus:border-primary focus:outline-none"
-                    placeholder={t('common.enterDescription') ?? 'Mô tả (tùy chọn)'}
+                    placeholder={t('common.description') ?? 'Mô tả (tùy chọn)'}
                     rows={3}
                   />
                 </div>

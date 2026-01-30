@@ -129,4 +129,35 @@ export const ReviewApi = {
       throw new Error(msg);
     }
   },
+  getReviewReport: async (productId?: string): Promise<ReviewReportDto> => {
+    try {
+      const response = await axiosClient.get<ReviewReportDto>(
+        "/admin/reports/reviews",
+        {
+          params: productId ? { productId } : {},
+        },
+      );
+      const result = response.data;
+      return result || {
+        totalReviews: 0,
+        averageRating: 0,
+        starCounts: {},
+        hiddenReviewsCount: 0,
+      };
+    } catch (error: any) {
+      const msg =
+        error.response?.data?.message ||
+        error.message ||
+        "Lỗi kết nối hệ thông";
+      console.error("Review report error:", error);
+      throw new Error(msg);
+    }
+  },
 };
+
+export interface ReviewReportDto {
+  totalReviews: number;
+  averageRating: number;
+  starCounts: Record<number, number>;
+  hiddenReviewsCount: number;
+}

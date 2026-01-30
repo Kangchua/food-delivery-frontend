@@ -40,7 +40,7 @@ const OrdersManagementPage: React.FC = () => {
 
   useEffect(() => {
     fetchOrders();
-  }, [filters.page, filters.status]); // Gọi lại khi đổi trang hoặc đổi filter status
+  }, [filters.page, filters.status, filters.searchCode, filters.fromDate, filters.toDate]); // Gọi lại khi đổi filter
 
   const fetchOrders = async () => {
     try {
@@ -66,7 +66,6 @@ const OrdersManagementPage: React.FC = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setFilters((prev) => ({ ...prev, page: 1 })); // Reset về trang 1 khi tìm kiếm mới
-    fetchOrders();
   };
   return (
     <MainLayout>

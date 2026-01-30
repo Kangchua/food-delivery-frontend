@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, LogOut, Search, Menu } from 'lucide-react';
+import { ShoppingCart, User, LogOut, Search, Menu, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useCart } from '@/context/CartContext';
@@ -79,6 +79,24 @@ const Header: React.FC = () => {
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
                 {t("nav.categories")}
+              </Link>
+              <Link
+                to="/admin/users"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {t("nav.users") ?? "Khách hàng"}
+              </Link>
+              <Link
+                to="/admin/reviews"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {t("nav.reviews") ?? "Đánh giá"}
+              </Link>
+              <Link
+                to="/admin/reports"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {t("admin.reports") ?? "Báo cáo"}
               </Link>
             </>
           ) : user?.role === "customer" || !user ? (

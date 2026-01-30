@@ -74,6 +74,15 @@ const AddressesManagementPage: React.FC = () => {
       return;
     }
 
+    // Validate phone number: must start with 0 and have 10 digits
+    if (!/^0\d{9}$/.test(formData.phoneNumber.trim())) {
+      toast({
+        title: 'Số điện thoại phải bắt đầu bằng 0 và có 10 chữ số',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (formData.latitude === 0 || formData.longitude === 0) {
       toast({
         title: 'Vui lòng chọn vị trí trên bản đồ',

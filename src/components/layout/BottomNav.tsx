@@ -36,7 +36,7 @@ const BottomNav: React.FC = () => {
     { path: '/admin', icon: LayoutDashboard, label: t('nav.dashboard') },
     { path: '/admin/orders', icon: ClipboardList, label: t('nav.orders') },
     { path: '/admin/products', icon: ShoppingCart, label: t('nav.products') },
-    { path: '/profile', icon: User, label: t('nav.profile') },
+    { path: '/admin/users', icon: User, label: t('nav.users') ?? "Khách hàng" },
   ];
 
   const links = user?.role === 'admin' 

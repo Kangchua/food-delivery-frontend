@@ -120,11 +120,7 @@ const App = () => (
               {/* Root level customer routes (for /menu, /cart, etc.) */}
               <Route
                 path="/menu"
-                element={
-                  <ProtectedRoute>
-                    <CustomerRoutes />
-                  </ProtectedRoute>
-                }
+                element={<CustomerRoutes />}
               />
               <Route
                 path="/cart"
