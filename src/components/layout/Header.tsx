@@ -12,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 
 const Header: React.FC = () => {
   const { t } = useTranslation();
@@ -22,18 +22,18 @@ const Header: React.FC = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/');
+    navigate("/");
   };
 
   const getDashboardLink = () => {
-    if (!user) return '/';
+    if (!user) return "/";
     switch (user.role) {
-      case 'admin':
-        return '/admin';
-      case 'shipper':
-        return '/shipper';
+      case "admin":
+        return "/admin";
+      case "shipper":
+        return "/shipper";
       default:
-        return '/';
+        return "/";
     }
   };
 
@@ -43,7 +43,9 @@ const Header: React.FC = () => {
         {/* Logo */}
         <Link to={getDashboardLink()} className="flex items-center gap-2">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary shadow-primary">
-            <span className="text-xl font-bold text-primary-foreground">🍜</span>
+            <span className="text-xl font-bold text-primary-foreground">
+              🍜
+            </span>
           </div>
           <span className="hidden text-xl font-bold text-foreground sm:inline">
             FoodGo
@@ -52,46 +54,46 @@ const Header: React.FC = () => {
 
         {/* Desktop Navigation */}
         <nav className="hidden items-center gap-6 md:flex">
-          {user?.role === 'admin' ? (
+          {user?.role === "admin" ? (
             <>
               <Link
                 to="/admin"
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
-                {t('nav.dashboard') ?? 'Bảng điều khiển'}
+                {t("nav.dashboard") ?? "Bảng điều khiển"}
               </Link>
               <Link
                 to="/admin/orders"
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
-                {t('nav.orders')}
+                {t("nav.orders")}
               </Link>
               <Link
                 to="/admin/products"
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
-                {t('nav.products')}
+                {t("nav.products")}
               </Link>
               <Link
                 to="/admin/categories"
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
-                {t('nav.categories')}
+                {t("nav.categories")}
               </Link>
             </>
-          ) : user?.role === 'customer' || !user ? (
+          ) : user?.role === "customer" || !user ? (
             <>
               <Link
                 to="/"
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
-                {t('nav.home')}
+                {t("nav.home")}
               </Link>
               <Link
                 to="/menu"
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
-                {t('nav.menu')}
+                {t("nav.menu")}
               </Link>
             </>
           ) : null}
@@ -104,7 +106,7 @@ const Header: React.FC = () => {
             variant="ghost"
             size="icon"
             className="hidden md:flex"
-            onClick={() => navigate('/menu')}
+            onClick={() => navigate("/menu")}
           >
             <Search className="h-5 w-5" />
           </Button>
@@ -113,17 +115,17 @@ const Header: React.FC = () => {
           {isAuthenticated && <NotificationBell />}
 
           {/* Cart - Customer only */}
-          {(!user || user.role === 'customer') && (
+          {(!user || user.role === "customer") && (
             <Button
               variant="ghost"
               size="icon"
               className="relative"
-              onClick={() => navigate('/cart')}
+              onClick={() => navigate("/cart")}
             >
               <ShoppingCart className="h-5 w-5" />
               {itemCount > 0 && (
                 <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                  {itemCount > 9 ? '9+' : itemCount}
+                  {itemCount > 9 ? "9+" : itemCount}
                 </span>
               )}
             </Button>
@@ -151,24 +153,32 @@ const Header: React.FC = () => {
                   <p className="text-xs text-muted-foreground">{user?.email}</p>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate('/profile')}>
+                <DropdownMenuItem onClick={() => navigate("/profile")}>
                   <User className="mr-2 h-4 w-4" />
-                  {t('nav.profile')}
+                  {t("nav.profile")}
                 </DropdownMenuItem>
-                {user?.role === 'admin' && (
-                  <DropdownMenuItem onClick={() => navigate('/admin')}>
-                    {t('nav.dashboard') ?? 'Bảng điều khiển'}
+                {user?.role === "admin" && (
+                  <DropdownMenuItem onClick={() => navigate("/admin")}>
+                    {t("nav.dashboard") ?? "Bảng điều khiển"}
                   </DropdownMenuItem>
                 )}
-                {user?.role === 'customer' && (
-                  <DropdownMenuItem onClick={() => navigate('/orders')}>
-                    {t('nav.orders')}
+                {user?.role === "customer" && (
+                  <DropdownMenuItem onClick={() => navigate("/orders")}>
+                    {t("nav.orders")}
+                  </DropdownMenuItem>
+                )}
+                {user?.role === "customer" && (
+                  <DropdownMenuItem onClick={() => navigate("/review")}>
+                    <Star className="mr-2 h-4 w-4" /> Đánh giá của tôi
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="text-destructive"
+                >
                   <LogOut className="mr-2 h-4 w-4" />
-                  {t('auth.logout')}
+                  {t("auth.logout")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -177,9 +187,9 @@ const Header: React.FC = () => {
               variant="default"
               size="sm"
               className="gradient-primary shadow-primary"
-              onClick={() => navigate('/auth/login')}
+              onClick={() => navigate("/auth/login")}
             >
-              {t('auth.login')}
+              {t("auth.login")}
             </Button>
           )}
 
