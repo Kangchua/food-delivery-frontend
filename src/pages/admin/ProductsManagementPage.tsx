@@ -51,7 +51,7 @@ const ProductsManagementPage: React.FC = () => {
       setCategories(catList);
     } catch (err) {
       console.error('Error fetching products:', err);
-      toast.error(t('error.fetchFailed') ?? 'Không tải được dữ liệu');
+      toast.error('Không tải được dữ liệu');
     } finally {
       setLoading(false);
     }
@@ -88,11 +88,11 @@ const ProductsManagementPage: React.FC = () => {
   const handleSaveProduct = async () => {
     const p = modal.product;
     if (!p?.name || p.price == null) {
-      toast.error(t('validation.nameRequired') ?? 'Nhập tên và giá');
+      toast.error('Nhập tên và giá');
       return;
     }
     if (!modal.isEditing && !p.categoryId) {
-      toast.error(t('admin.productCategory') ?? 'Chọn danh mục');
+      toast.error('Chọn danh mục');
       return;
     }
     try {
@@ -122,7 +122,7 @@ const ProductsManagementPage: React.FC = () => {
       handleCloseModal();
       loadData();
     } catch (err: any) {
-      toast.error(err?.message ?? (t('error.saveFailed') ?? 'Lưu thất bại'));
+      toast.error(err?.message ?? 'Lưu thất bại');
     } finally {
       setSaving(false);
     }
@@ -156,7 +156,7 @@ const ProductsManagementPage: React.FC = () => {
       setDeleteConfirm({ isOpen: false, productId: null, productName: null });
       loadData();
     } catch (err: any) {
-      toast.error(err?.message ?? (t('error.deleteFailed') ?? 'Xóa thất bại'));
+      toast.error(err?.message ?? 'Xóa thất bại');
     } finally {
       setDeleting(false);
     }
@@ -164,34 +164,36 @@ const ProductsManagementPage: React.FC = () => {
 
   const handleMoveProduct = async (productId: string, direction: 'up' | 'down') => {
     try {
-      const productIndex = products.findIndex(p => p.id === productId);
-      const product = products[productIndex];
-      
-      if (!product) return;
-
       // Sort products by displayOrder to find neighbors
       const sortedProducts = [...products].sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
       const sortedIndex = sortedProducts.findIndex(p => p.id === productId);
+      const product = sortedProducts[sortedIndex];
+      
+      if (!product) return;
 
       if (direction === 'up' && sortedIndex > 0) {
         // Swap display order with previous product
         const prevProduct = sortedProducts[sortedIndex - 1];
-        const tempOrder = product.displayOrder ?? 0;
+        const currentOrder = product.displayOrder ?? 0;
+        const prevOrder = prevProduct.displayOrder ?? 0;
         
+        // Swap values
         await Promise.all([
-          adminApi.products.updateDisplayOrder(productId, prevProduct.displayOrder ?? 0),
-          adminApi.products.updateDisplayOrder(prevProduct.id, tempOrder)
+          adminApi.products.updateDisplayOrder(productId, prevOrder),
+          adminApi.products.updateDisplayOrder(prevProduct.id, currentOrder)
         ]);
         
         toast.success('Đã cập nhật thứ tự hiển thị');
       } else if (direction === 'down' && sortedIndex < sortedProducts.length - 1) {
         // Swap display order with next product
         const nextProduct = sortedProducts[sortedIndex + 1];
-        const tempOrder = product.displayOrder ?? 0;
+        const currentOrder = product.displayOrder ?? 0;
+        const nextOrder = nextProduct.displayOrder ?? 0;
         
+        // Swap values
         await Promise.all([
-          adminApi.products.updateDisplayOrder(productId, nextProduct.displayOrder ?? 0),
-          adminApi.products.updateDisplayOrder(nextProduct.id, tempOrder)
+          adminApi.products.updateDisplayOrder(productId, nextOrder),
+          adminApi.products.updateDisplayOrder(nextProduct.id, currentOrder)
         ]);
         
         toast.success('Đã cập nhật thứ tự hiển thị');
@@ -296,7 +298,7 @@ const ProductsManagementPage: React.FC = () => {
                           >
                             <ArrowUp className="h-3 w-3" />
                           </Button>
-                          <span className="min-w-[30px] text-center text-sm font-medium">{products.findIndex(p => p.id === product.id) + 1}</span>
+                          <span className="min-w-[30px] text-center text-sm font-medium">{product.displayOrder ?? 0}</span>
                           <Button
                             size="sm"
                             variant="outline"

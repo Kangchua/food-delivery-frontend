@@ -1,10 +1,11 @@
-import React from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { ShoppingCart, User, LogOut, Search, Menu, Star } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/context/AuthContext";
-import { useCart } from "@/context/CartContext";
-import useTranslation from "@/hooks/useTranslation";
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ShoppingCart, User, LogOut, Search, Menu, Star } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/context/AuthContext';
+import { useCart } from '@/context/CartContext';
+import useTranslation from '@/hooks/useTranslation';
+import { NotificationBell } from '@/components/common/NotificationBell';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -79,6 +80,24 @@ const Header: React.FC = () => {
               >
                 {t("nav.categories")}
               </Link>
+              <Link
+                to="/admin/users"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {t("nav.users") ?? "Khách hàng"}
+              </Link>
+              <Link
+                to="/admin/reviews"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {t("nav.reviews") ?? "Đánh giá"}
+              </Link>
+              <Link
+                to="/admin/reports"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {t("admin.reports") ?? "Báo cáo"}
+              </Link>
             </>
           ) : user?.role === "customer" || !user ? (
             <>
@@ -109,6 +128,9 @@ const Header: React.FC = () => {
           >
             <Search className="h-5 w-5" />
           </Button>
+
+          {/* Notification Bell - Authenticated only */}
+          {isAuthenticated && <NotificationBell />}
 
           {/* Cart - Customer only */}
           {(!user || user.role === "customer") && (
