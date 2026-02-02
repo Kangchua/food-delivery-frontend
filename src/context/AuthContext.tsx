@@ -34,17 +34,28 @@ const STORAGE_KEY = 'auth_user';
 
 // Helper function to convert roles array to primary role
 const getMainRole = (roles?: string[]): UserRole => {
-  if (!roles || roles.length === 0) return UserRole.CUSTOMER;
+  if (!roles || roles.length === 0) {
+    console.warn('DEBUG - getMainRole: No roles provided, defaulting to CUSTOMER');
+    return UserRole.CUSTOMER;
+  }
   
   // Get first role and normalize it
   const roleStr = String(roles[0]).toLowerCase().trim();
+  console.log('DEBUG - getMainRole: roleStr =', roleStr, 'roles =', roles);
   
-  // Match against UserRole enum values
-  if (roleStr === UserRole.ADMIN || roleStr === 'admin') return UserRole.ADMIN;
-  if (roleStr === UserRole.SHIPPER || roleStr === 'shipper') return UserRole.SHIPPER;
-  if (roleStr === UserRole.CUSTOMER || roleStr === 'customer') return UserRole.CUSTOMER;
+  // Match against UserRole enum values (priority order)
+  if (roleStr === 'admin') return UserRole.ADMIN;
+  if (roleStr === 'shipper') return UserRole.SHIPPER;
+  if (roleStr === 'staff') return UserRole.STAFF;
+  if (roleStr === 'customer') return UserRole.CUSTOMER;
   
-  // Default fallback
+  // Fallback - try to match enum values directly
+  if (roleStr === UserRole.ADMIN) return UserRole.ADMIN;
+  if (roleStr === UserRole.SHIPPER) return UserRole.SHIPPER;
+  if (roleStr === UserRole.STAFF) return UserRole.STAFF;
+  if (roleStr === UserRole.CUSTOMER) return UserRole.CUSTOMER;
+  
+  console.warn('DEBUG - getMainRole: Unknown role', roleStr, 'defaulting to CUSTOMER');
   return UserRole.CUSTOMER;
 };
 

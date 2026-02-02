@@ -86,11 +86,17 @@ const NotificationsPage: React.FC = () => {
             filteredNotifications.map((notification) => (
               <div
                 key={notification.id}
+                onClick={() => {
+                  if (notification.link) {
+                    navigate(notification.link);
+                  }
+                }}
                 className={cn(
                   'rounded-lg border p-4 transition-colors',
                   notification.isRead
                     ? 'border-border bg-muted/30'
-                    : 'border-primary/50 bg-primary/5'
+                    : 'border-primary/50 bg-primary/5',
+                  notification.link && 'cursor-pointer hover:bg-primary/10'
                 )}
               >
                 <div className="flex gap-4">

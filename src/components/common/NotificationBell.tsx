@@ -92,9 +92,16 @@ export const NotificationBell = () => {
                 {notifications.map((notification) => (
                   <div
                     key={notification.id}
+                    onClick={() => {
+                      if (notification.link) {
+                        setIsOpen(false);
+                        navigate(notification.link);
+                      }
+                    }}
                     className={cn(
                       'p-4 hover:bg-gray-50 transition-colors border-l-4',
-                      notification.isRead ? 'border-l-gray-200' : 'border-l-blue-500'
+                      notification.isRead ? 'border-l-gray-200' : 'border-l-blue-500',
+                      notification.link && 'cursor-pointer'
                     )}
                   >
                     {/* Notification Content */}

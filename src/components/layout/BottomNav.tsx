@@ -39,10 +39,18 @@ const BottomNav: React.FC = () => {
     { path: '/admin/users', icon: User, label: t('nav.users') ?? "Khách hàng" },
   ];
 
+  const staffLinks: NavLink[] = [
+    { path: '/staff', icon: LayoutDashboard, label: t('nav.dashboard') },
+    { path: '/staff/orders', icon: ClipboardList, label: t('nav.orders') },
+    { path: '/profile', icon: User, label: t('nav.profile') },
+  ];
+
   const links = user?.role === 'admin' 
     ? adminLinks 
     : user?.role === 'shipper' 
     ? shipperLinks 
+    : user?.role === 'staff'
+    ? staffLinks
     : customerLinks;
 
   return (

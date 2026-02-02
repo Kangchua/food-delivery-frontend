@@ -112,7 +112,23 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const removeItem = (itemId: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== itemId));
+    // Find the product ID to call the API
+    const item = items.find((i) => i.id === itemId);
+    if (!item) return;
+
+    // Remove from state immediately for better UX
+    setItems((prev) => prev.filter((i) => i.id !== itemId));
+
+    // Sync to database if authenticated
+    if (isAuthenticated) {
+      cartApi
+        .removeItem(item.product.id)
+        .catch((error) => {
+          console.error('Failed to remove item from database:', error);
+          // Reload cart from DB to sync state if removal failed
+          loadCartFromDB();
+        });
+    }
   };
 
   const updateQuantity = (itemId: string, quantity: number) => {
@@ -120,13 +136,37 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       removeItem(itemId);
       return;
     }
+
+    // Find the product ID
+    const item = items.find((i) => i.id === itemId);
+    if (!item) return;
+
+    // Update state immediately
     setItems((prev) =>
-      prev.map((item) => (item.id === itemId ? { ...item, quantity } : item))
+      prev.map((i) => (i.id === itemId ? { ...i, quantity } : i))
     );
+
+    // Sync to database if authenticated
+    if (isAuthenticated) {
+      cartApi
+        .updateQuantity(item.product.id, quantity)
+        .catch((error) => {
+          console.error('Failed to update quantity in database:', error);
+          // Reload cart from DB to sync state if update failed
+          loadCartFromDB();
+        });
+    }
   };
 
   const clearCart = () => {
     setItems([]);
+
+    // Sync to database if authenticated
+    if (isAuthenticated) {
+      cartApi.clear().catch((error) => {
+        console.error('Failed to clear cart in database:', error);
+      });
+    }
   };
 
   return (

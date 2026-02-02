@@ -11,6 +11,7 @@ import {
   ProtectedRoute,
   AdminRoutes,
   ShipperRoutes,
+  StaffRoutes,
   CustomerRoutes,
 } from "@/routes";
 import { UserRole } from "@/types/enum";
@@ -49,6 +50,8 @@ const RootRedirect = () => {
       return <Navigate to="/admin" replace />;
     case UserRole.SHIPPER:
       return <Navigate to="/shipper" replace />;
+    case UserRole.STAFF:
+      return <Navigate to="/staff" replace />;
     case UserRole.CUSTOMER:
     default:
       return <Navigate to="/customer" replace />;
@@ -103,6 +106,16 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <ShipperRoutes />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Staff Routes - Protected */}
+              <Route
+                path="/staff/*"
+                element={
+                  <ProtectedRoute>
+                    <StaffRoutes />
                   </ProtectedRoute>
                 }
               />
