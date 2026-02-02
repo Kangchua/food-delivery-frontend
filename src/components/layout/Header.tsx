@@ -99,6 +99,27 @@ const Header: React.FC = () => {
                 {t("admin.reports") ?? "Báo cáo"}
               </Link>
             </>
+          ) : user?.role === "staff" ? (
+            <>
+              <Link
+                to="/staff"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {t("nav.dashboard") ?? "Bảng điều khiển"}
+              </Link>
+              <Link
+                to="/staff/orders"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {t("nav.orders")}
+              </Link>
+              <Link
+                to="/staff/inventory"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Tồn kho
+              </Link>
+            </>
           ) : user?.role === "customer" || !user ? (
             <>
               <Link
