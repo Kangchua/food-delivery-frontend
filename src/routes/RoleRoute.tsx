@@ -24,13 +24,6 @@ const RoleRoute: React.FC<RoleRouteProps> = ({ allowedRoles, children }) => {
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
-  console.log('DEBUG - RoleRoute check:', { 
-    userRole: user.role, 
-    allowedRoles, 
-    isAllowed: allowedRoles.includes(user.role),
-    path: location.pathname 
-  });
-
   if (!allowedRoles.includes(user.role)) {
     // Redirect to appropriate dashboard based on role
     const roleRedirects: Record<UserRole, string> = {
@@ -38,7 +31,6 @@ const RoleRoute: React.FC<RoleRouteProps> = ({ allowedRoles, children }) => {
       [UserRole.SHIPPER]: '/shipper',
       [UserRole.ADMIN]: '/admin',
     };
-    console.log('DEBUG - RoleRoute redirecting to:', roleRedirects[user.role]);
     return <Navigate to={roleRedirects[user.role]} replace />;
   }
 

@@ -55,8 +55,8 @@ export const RegisterForm: React.FC<{
       return;
     }
 
-    if (formData.password.length < 8) {
-      toast({ title: 'Mật khẩu phải có ít nhất 8 ký tự', variant: 'destructive' });
+    if (formData.password.length < 6) {
+      toast({ title: 'Mật khẩu phải có ít nhất 6 ký tự', variant: 'destructive' });
       return;
     }
 
@@ -165,7 +165,7 @@ export const RegisterForm: React.FC<{
           </button>
         </div>
         <p className="text-xs text-muted-foreground">
-          Mật khẩu phải có ít nhất 8 ký tự
+          Mật khẩu phải có ít nhất 6 ký tự
         </p>
       </div>
 

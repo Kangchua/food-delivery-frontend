@@ -1,12 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
-import useTranslation from '@/hooks/useTranslation';
-import { Package, TrendingUp, Clock, CheckCircle, Eye } from 'lucide-react';
+import { Package, TrendingUp, Clock, CheckCircle, Eye, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { shipperApi } from '@/api/shipperApi';
 import { formatCurrency } from '@/utils/formatters';
 import { toast } from 'sonner';
+
+// Import đúng Enum từ file định nghĩa của bạn
+import { OrderStatus, getOrderStatusInfo } from '@/types/enum';
+import { OrderAdminSummaryResponse } from '@/types/order.type';
 
 interface DashboardStats {
   totalDeliveries: number;
@@ -17,206 +20,141 @@ interface DashboardStats {
   averageRating: number;
 }
 
-interface RecentOrder {
-  id: number;
-  customerName: string;
-  deliveryAddress: string;
-  status: string;
-  totalAmount: number;
-}
-
 const ShipperDashboard: React.FC = () => {
-  const { t } = useTranslation();
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
+  const [recentOrders, setRecentOrders] = useState<OrderAdminSummaryResponse[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchDashboard();
-  }, []);
-
-  const fetchDashboard = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
-
-      // Fetch dashboard stats
-      try {
-        const dashboardData = await shipperApi.getDashboard();
-        setStats(dashboardData);
-      } catch (err) {
-        console.error('Error fetching dashboard:', err);
-      }
-
-      // Fetch recent assigned orders
-      try {
-        const ordersData = await shipperApi.getAssignedOrders();
-        const ordersList = (Array.isArray(ordersData) ? ordersData : ordersData?.data || []).slice(0, 5);
-        setRecentOrders(ordersList);
-      } catch (err) {
-        console.error('Error fetching orders:', err);
-      }
+      
+      const [statsRes, ordersRes] = await Promise.all([
+        shipperApi.getDashboard(),
+        shipperApi.getAssignedOrders()
+      ]);
+      
+      // Handle different response structures from axios
+      const statsData = statsRes?.data || null;
+      const ordersData = ordersRes?.data || [];
+      
+      setStats(statsData);
+      setRecentOrders(ordersData?.slice(0, 5) || []); // Chỉ lấy 5 đơn gần nhất
     } catch (err) {
-      console.error('Error fetching dashboard:', err);
-      toast.error(t('error.fetchFailed') || 'Failed to fetch dashboard');
+      console.error('Error fetching dashboard data:', err);
+      toast.error('Không thể tải dữ liệu dashboard');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const defaultStats: DashboardStats = {
-    totalDeliveries: 0,
-    completedDeliveries: 0,
-    pendingDeliveries: 0,
-    deliveryInProgress: 0,
-    earningToday: 0,
-    averageRating: 0,
-  };
-
-  const displayStats = stats || defaultStats;
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   const statCards = [
-    {
-      label: t('shipper.pendingDeliveries') || 'Pending',
-      value: displayStats.pendingDeliveries,
-      icon: Clock,
-      color: 'bg-warning/10 text-warning',
-    },
-    {
-      label: t('shipper.inProgress') || 'In Progress',
-      value: displayStats.deliveryInProgress,
-      icon: Package,
-      color: 'bg-info/10 text-info',
-    },
-    {
-      label: t('shipper.completedToday') || 'Completed Today',
-      value: displayStats.completedDeliveries,
-      icon: CheckCircle,
-      color: 'bg-success/10 text-success',
-    },
-    {
-      label: t('shipper.earningToday') || 'Earning Today',
-      value: formatCurrency(displayStats.earningToday),
-      icon: TrendingUp,
-      color: 'bg-primary/10 text-primary',
-    },
+    { label: 'Chờ lấy', value: stats?.pendingDeliveries || 0, icon: Clock, color: 'bg-amber-50 text-amber-600 border-amber-100' },
+    { label: 'Đang giao', value: stats?.deliveryInProgress || 0, icon: Package, color: 'bg-blue-50 text-blue-600 border-blue-100' },
+    { label: 'Hoàn thành', value: stats?.completedDeliveries || 0, icon: CheckCircle, color: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
+    { label: 'Thu nhập', value: formatCurrency(stats?.earningToday || 0), icon: TrendingUp, color: 'bg-orange-50 text-orange-600 border-orange-100' },
   ];
 
   return (
     <MainLayout>
-      <div className="container mx-auto px-4 py-6">
-        <h1 className="mb-6 text-2xl font-bold">{t('shipper.dashboard') || 'Delivery Dashboard'}</h1>
+      <div className="container mx-auto px-4 py-6 max-w-5xl">
+        <header className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Bảng điều khiển</h1>
+            <p className="text-gray-500 text-sm">Chào mừng trở lại, Shipper!</p>
+          </div>
+          <Button 
+            onClick={fetchDashboardData} 
+            variant="outline" 
+            size="sm" 
+            disabled={loading}
+            className="rounded-full px-4"
+          >
+             Làm mới
+          </Button>
+        </header>
 
         {loading ? (
-          <div className="flex min-h-64 items-center justify-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <div className="flex h-80 flex-col items-center justify-center space-y-4">
+             <div className="h-10 w-10 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
+             <p className="text-gray-400 text-sm animate-pulse">Đang tải dữ liệu...</p>
           </div>
         ) : (
-          <>
+          <div className="space-y-8">
             {/* Stats Grid */}
-            <div className="mb-8 grid gap-4 md:grid-cols-4">
+            <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
               {statCards.map((stat) => (
-                <div key={stat.label} className={`rounded-xl p-6 shadow-card ${stat.color}`}>
-                  <div className="mb-3 inline-block rounded-lg bg-white/20 p-3">
-                    <stat.icon className="h-6 w-6" />
+                <div key={stat.label} className={`rounded-2xl border p-5 shadow-sm transition-all hover:shadow-md ${stat.color}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="p-2 bg-white/50 rounded-lg">
+                        <stat.icon className="h-5 w-5" />
+                    </div>
                   </div>
-                  <p className="text-2xl font-bold">{stat.value}</p>
-                  <p className="text-sm opacity-75">{stat.label}</p>
+                  <p className="text-xl font-black">{stat.value}</p>
+                  <p className="text-[11px] font-bold uppercase opacity-70 tracking-wider">{stat.label}</p>
                 </div>
               ))}
             </div>
 
-            {/* Overall Stats */}
-            <div className="mb-8 grid gap-4 md:grid-cols-2">
-              <div className="rounded-lg bg-card p-6 shadow-card">
-                <h3 className="mb-3 font-bold">{t('shipper.totalDeliveries') || 'Total Deliveries'}</h3>
-                <p className="text-4xl font-bold text-primary">{displayStats.totalDeliveries}</p>
-                <p className="text-sm text-muted-foreground">
-                  {t('shipper.completed')}: {displayStats.completedDeliveries}
-                </p>
-              </div>
-
-              <div className="rounded-lg bg-card p-6 shadow-card">
-                <h3 className="mb-3 font-bold">{t('shipper.rating') || 'Your Rating'}</h3>
-                <p className="text-4xl font-bold text-warning">
-                  {displayStats.averageRating.toFixed(1)} ⭐
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {t('shipper.basedonDeliveries', { count: displayStats.totalDeliveries })}
-                </p>
-              </div>
-            </div>
-
-            {/* Recent Orders */}
-            <div className="rounded-lg bg-card p-6 shadow-card">
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-lg font-bold">{t('shipper.recentOrders') || 'Recent Orders'}</h2>
-                <Link to="/shipper/orders">
-                  <Button size="sm" variant="outline">
-                    {t('common.viewAll')}
-                  </Button>
+            {/* Orders Section */}
+            <section className="rounded-2xl bg-white p-6 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  <Package className="h-5 w-5 text-orange-500" />
+                  Đơn hàng mới nhận
+                </h2>
+                <Link to="/shipper/orders" className="text-xs font-bold text-orange-600 hover:underline">
+                  Xem tất cả
                 </Link>
               </div>
 
               {recentOrders.length === 0 ? (
-                <div className="flex min-h-48 items-center justify-center text-muted-foreground">
-                  <div className="text-center">
-                    <Package className="mx-auto mb-3 h-12 w-12 opacity-50" />
-                    <p>{t('shipper.noRecentOrders') || 'No recent orders'}</p>
-                  </div>
+                <div className="flex flex-col items-center justify-center py-12 bg-gray-50 rounded-xl border border-dashed">
+                  <AlertCircle className="mb-2 h-8 w-8 text-gray-300" />
+                  <p className="text-sm text-gray-400 font-medium">Bạn chưa được phân công đơn nào</p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {recentOrders.map((order) => (
-                    <div key={order.id} className="flex items-center justify-between border-b pb-3">
-                      <div className="flex-1">
-                        <div className="mb-1 flex items-center gap-2">
-                          <p className="font-bold">Order #{order.id}</p>
-                          <span className={`inline-block rounded-full px-2 py-1 text-xs font-semibold ${
-                            order.status === 'pending' ? 'bg-warning/10 text-warning' :
-                            order.status === 'delivery' ? 'bg-info/10 text-info' :
-                            'bg-success/10 text-success'
-                          }`}>
-                            {order.status}
-                          </span>
+                  {recentOrders.map((order) => {
+                    // Ensure status is converted to enum if it's a number
+                    const orderStatus = typeof order.status === 'number' ? order.status : parseInt(order.status as any);
+                    const statusInfo = getOrderStatusInfo(orderStatus);
+                    return (
+                      <div key={order.id} className="group flex items-center justify-between p-4 border border-gray-50 rounded-xl hover:border-orange-100 hover:bg-orange-50/30 transition-all">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-mono font-bold text-sm">#{order.orderCode}</span>
+                            <span className={`px-2 py-0.5 rounded text-[9px] font-black border uppercase text-white ${statusInfo.color}`}>
+                              {statusInfo.label}
+                            </span>
+                          </div>
+                          <p className="text-sm font-bold text-gray-800">{order.customerName}</p>
+                          <p className="text-[10px] text-gray-400">
+                            {new Date(order.createdAt).toLocaleString('vi-VN')}
+                          </p>
                         </div>
-                        <p className="text-sm text-muted-foreground">{order.customerName}</p>
-                        <p className="text-xs text-muted-foreground line-clamp-1">
-                          {order.deliveryAddress}
-                        </p>
-                      </div>
-                      <div className="ml-4 flex items-center gap-3">
-                        <div className="text-right">
-                          <p className="font-bold">{formatCurrency(order.totalAmount)}</p>
+                        
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <p className="font-bold text-orange-600">{formatCurrency(order.totalAmount)}</p>
+                          </div>
+                          <Link to={`/shipper/orders/${order.id}`}>
+                            <Button size="icon" variant="ghost" className="rounded-full group-hover:bg-orange-500 group-hover:text-white transition-all">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
                         </div>
-                        <Link to={`/shipper/orders/${order.id}`}>
-                          <Button size="sm" variant="ghost">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </Link>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
-            </div>
-
-            {/* Quick Actions */}
-            <div className="mt-8 grid gap-4 md:grid-cols-3">
-              <Link to="/shipper/orders">
-                <Button className="gradient-primary w-full">
-                  {t('shipper.viewAllOrders') || 'View All Orders'}
-                </Button>
-              </Link>
-              <Link to="/shipper/history">
-                <Button variant="outline" className="w-full">
-                  {t('shipper.deliveryHistory') || 'Delivery History'}
-                </Button>
-              </Link>
-              <Button variant="outline" className="w-full">
-                {t('shipper.contactSupport') || 'Contact Support'}
-              </Button>
-            </div>
-          </>
+            </section>
+          </div>
         )}
       </div>
     </MainLayout>

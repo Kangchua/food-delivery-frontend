@@ -1,64 +1,48 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, MapPin, Phone } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import MainLayout from '@/components/layout/MainLayout';
 import useTranslation from '@/hooks/useTranslation';
 import { shipperApi } from '@/api/shipperApi';
 import { formatCurrency } from '@/utils/formatters';
 import { toast } from 'sonner';
-
-interface Order {
-  id: number;
-  customerName: string;
-  customerPhone: string;
-  deliveryAddress: string;
-  totalAmount: number;
-  status: string;
-  createdAt: string;
-}
+import { OrderAdminSummaryResponse } from '@/types/order.type';
+import { OrderStatus, getOrderStatusInfo } from '@/types/enum';
 
 const AssignedOrdersPage: React.FC = () => {
   const { t } = useTranslation();
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<OrderAdminSummaryResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState('');
+  const [filterStatus, setFilterStatus] = useState<string>('');
 
   useEffect(() => {
     fetchAssignedOrders();
-  }, [filterStatus]);
+  }, []);
 
   const fetchAssignedOrders = async () => {
     try {
       setLoading(true);
-      const data = await shipperApi.getAssignedOrders({
-        status: filterStatus as any,
-      });
-      const orderList = Array.isArray(data) ? data : data?.data || [];
-      setOrders(orderList);
+      const response = await shipperApi.getAssignedOrders();
+      const ordersData = response?.data || [];
+      setOrders(ordersData);
     } catch (err) {
       console.error('Error fetching assigned orders:', err);
-      toast.error(t('error.fetchFailed') || 'Failed to fetch orders');
+      toast.error('Không thể tải danh sách đơn hàng');
     } finally {
       setLoading(false);
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'pending':
-        return 'bg-warning/10 text-warning';
-      case 'confirmed':
-        return 'bg-info/10 text-info';
-      case 'delivery':
-        return 'bg-primary/10 text-primary';
-      case 'delivered':
-        return 'bg-success/10 text-success';
-      case 'cancelled':
-        return 'bg-destructive/10 text-destructive';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
+
+  const filteredOrders = orders.filter(order => {
+    if (!filterStatus) return true;
+    return order.status.toString() === filterStatus;
+  });
+
+  const getStatusColor = (status: OrderStatus) => {
+    const info = getOrderStatusInfo(status);
+    return info.color;
   };
 
   return (
@@ -66,18 +50,18 @@ const AssignedOrdersPage: React.FC = () => {
       <div className="container mx-auto px-4 py-6">
         <h1 className="mb-6 text-2xl font-bold">{t('shipper.assignedOrders') || 'Assigned Orders'}</h1>
 
-        {/* Filter */}
+        {/* Status Filter */}
         <div className="mb-6">
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
             className="rounded-lg border bg-background px-4 py-2 focus:border-primary focus:outline-none"
           >
-            <option value="">{t('common.allStatus') || 'All Status'}</option>
-            <option value="pending">{t('orderStatus.pending')}</option>
-            <option value="confirmed">{t('orderStatus.confirmed')}</option>
-            <option value="delivery">{t('orderStatus.delivery')}</option>
-            <option value="delivered">{t('orderStatus.delivered')}</option>
+            <option value="">Tất cả trạng thái</option>
+            <option value={OrderStatus.Pending.toString()}>{getOrderStatusInfo(OrderStatus.Pending).label}</option>
+            <option value={OrderStatus.Confirmed.toString()}>{getOrderStatusInfo(OrderStatus.Confirmed).label}</option>
+            <option value={OrderStatus.Shipping.toString()}>{getOrderStatusInfo(OrderStatus.Shipping).label}</option>
+            <option value={OrderStatus.Completed.toString()}>{getOrderStatusInfo(OrderStatus.Completed).label}</option>
           </select>
         </div>
 
@@ -87,52 +71,41 @@ const AssignedOrdersPage: React.FC = () => {
             <div className="flex min-h-64 items-center justify-center">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             </div>
-          ) : orders.length === 0 ? (
+          ) : filteredOrders.length === 0 ? (
             <div className="flex min-h-64 items-center justify-center text-muted-foreground">
-              {t('common.noData') || 'No orders assigned'}
+              {filterStatus ? 'Không có đơn hàng phù hợp với bộ lọc' : 'Không có đơn hàng được giao'}
             </div>
           ) : (
-            orders.map((order) => (
+            filteredOrders.map((order) => (
               <div key={order.id} className="rounded-lg bg-card p-6 shadow-card hover:shadow-lg transition-shadow">
                 <div className="grid gap-4 md:grid-cols-4">
                   {/* Order Info */}
                   <div>
-                    <p className="text-sm text-muted-foreground">{t('common.orderId')}</p>
+                    <p className="text-sm text-muted-foreground">Mã đơn hàng</p>
                     <p className="font-bold text-lg">#{order.id}</p>
                   </div>
 
                   {/* Customer Info */}
                   <div>
-                    <p className="text-sm text-muted-foreground">{t('common.customer')}</p>
+                    <p className="text-sm text-muted-foreground">Khách hàng</p>
                     <p className="font-medium">{order.customerName}</p>
-                    {order.customerPhone && (
-                      <Link to={`tel:${order.customerPhone}`}>
-                        <Button variant="link" size="sm" className="h-auto p-0 text-sm mt-1">
-                          <Phone className="h-3 w-3 mr-1" />
-                          {order.customerPhone}
-                        </Button>
-                      </Link>
-                    )}
                   </div>
 
-                  {/* Delivery Address */}
+                  {/* Order Code */}
                   <div>
-                    <p className="text-sm text-muted-foreground flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
-                      {t('common.deliveryAddress')}
-                    </p>
-                    <p className="text-sm font-medium line-clamp-2">{order.deliveryAddress}</p>
+                    <p className="text-sm text-muted-foreground">Mã giao hàng</p>
+                    <p className="font-medium">{order.orderCode}</p>
                   </div>
 
                   {/* Amount and Status */}
                   <div className="flex flex-col justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">{t('common.amount')}</p>
+                      <p className="text-sm text-muted-foreground">Số tiền</p>
                       <p className="font-bold text-lg text-primary">{formatCurrency(order.totalAmount)}</p>
                     </div>
                     <div>
-                      <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${getStatusColor(order.status)}`}>
-                        {order.status}
+                      <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold text-white ${getStatusColor(order.status)}`}>
+                        {getOrderStatusInfo(order.status).label}
                       </span>
                     </div>
                   </div>
@@ -143,7 +116,7 @@ const AssignedOrdersPage: React.FC = () => {
                   <Link to={`/shipper/orders/${order.id}`} className="flex-1">
                     <Button className="w-full gap-2">
                       <Eye className="h-4 w-4" />
-                      {t('common.viewDetails')}
+                      Xem chi tiết
                     </Button>
                   </Link>
                 </div>

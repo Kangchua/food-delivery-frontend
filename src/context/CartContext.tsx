@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 import { Product, CartItem } from '@/api/dataApi';
 import { useAuth } from '@/context/AuthContext';
 import cartApi from '@/api/cartApi';
+import { UserRole } from '@/types/enum';
 
 interface CartContextType {
   items: CartItem[];
@@ -20,7 +21,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 const DELIVERY_FEE = 15000;
 
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [items, setItems] = useState<CartItem[]>(() => {
     const saved = localStorage.getItem('cart');
     return saved ? JSON.parse(saved) : [];
@@ -28,10 +29,10 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // Load cart from DB when user logs in
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && user && user.role !== UserRole.SHIPPER) {
       loadCartFromDB();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user]);
 
   // Clear cart when user logs out
   useEffect(() => {
@@ -99,7 +100,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
     
     // Sync to database if authenticated and reload cart to get real IDs
-    if (isAuthenticated) {
+    if (isAuthenticated && user && user.role !== UserRole.SHIPPER) {
       cartApi.addItem(product.id, quantity)
         .then(() => {
           // Reload cart from DB to get actual cart item IDs

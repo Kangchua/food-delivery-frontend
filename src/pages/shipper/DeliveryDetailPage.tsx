@@ -7,35 +7,18 @@ import useTranslation from '@/hooks/useTranslation';
 import { shipperApi } from '@/api/shipperApi';
 import { formatCurrency } from '@/utils/formatters';
 import { toast } from 'sonner';
-
-interface OrderItem {
-  id: number;
-  productName: string;
-  quantity: number;
-  price: number;
-}
-
-interface Order {
-  id: number;
-  customerName: string;
-  customerPhone: string;
-  customerEmail: string;
-  deliveryAddress: string;
-  totalAmount: number;
-  status: string;
-  createdAt: string;
-  items?: OrderItem[];
-}
+import { OrderDetailResponse } from '@/types/order.type';
+import { OrderStatus, getOrderStatusInfo } from '@/types/enum';
 
 const DeliveryDetailPage: React.FC = () => {
   const { t } = useTranslation();
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
 
-  const [order, setOrder] = useState<Order | null>(null);
+  const [order, setOrder] = useState<OrderDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [confirmingPickup, setConfirmingPickup] = useState(false);
   const [confirming, setConfirming] = useState(false);
-  const [notes, setNotes] = useState('');
   const [showIssueForm, setShowIssueForm] = useState(false);
   const [issueReason, setIssueReason] = useState('');
 
@@ -50,13 +33,30 @@ const DeliveryDetailPage: React.FC = () => {
   const fetchOrderDetail = async () => {
     try {
       setLoading(true);
-      const data = await shipperApi.getOrderDetail(parseInt(orderId!));
-      setOrder(data);
+      const response = await shipperApi.getOrderById(orderId!);
+      const orderData = response?.data || null;
+      setOrder(orderData);
     } catch (err) {
       console.error('Error fetching order:', err);
-      toast.error(t('error.fetchFailed') || 'Failed to fetch order');
+      toast.error('Không thể tải chi tiết đơn hàng');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleConfirmPickup = async () => {
+    if (!order) return;
+
+    try {
+      setConfirmingPickup(true);
+      await shipperApi.confirmPickup(order.orderId);
+      toast.success('Xác nhận lấy hàng thành công');
+      fetchOrderDetail();
+    } catch (err) {
+      console.error('Error confirming pickup:', err);
+      toast.error('Xác nhận lấy hàng thất bại');
+    } finally {
+      setConfirmingPickup(false);
     }
   };
 
@@ -65,12 +65,12 @@ const DeliveryDetailPage: React.FC = () => {
 
     try {
       setConfirming(true);
-      await shipperApi.confirmDelivery(order.id, notes || undefined);
-      toast.success(t('shipper.deliveryConfirmed') || 'Delivery confirmed');
-      navigate('/shipper/orders');
+      await shipperApi.deliverySuccess(order.orderId);
+      toast.success('Xác nhận giao hàng thành công');
+      fetchOrderDetail();
     } catch (err) {
       console.error('Error confirming delivery:', err);
-      toast.error(t('error.confirmFailed') || 'Failed to confirm delivery');
+      toast.error('Xác nhận giao hàng thất bại');
     } finally {
       setConfirming(false);
     }
@@ -78,19 +78,19 @@ const DeliveryDetailPage: React.FC = () => {
 
   const handleReportIssue = async () => {
     if (!order || !issueReason) {
-      toast.error(t('validation.issueDescriptionRequired'));
+      toast.error('Vui lòng nhập lý do giao hàng thất bại');
       return;
     }
 
     try {
       setConfirming(true);
-      await shipperApi.reportIssue(order.id, issueReason);
-      toast.success(t('shipper.issueReported') || 'Issue reported');
+      await shipperApi.deliveryFailed(order.orderId, issueReason);
+      toast.success('Đã báo cáo vấn đề giao hàng');
       setShowIssueForm(false);
       fetchOrderDetail();
     } catch (err) {
       console.error('Error reporting issue:', err);
-      toast.error(t('error.reportFailed') || 'Failed to report issue');
+      toast.error('Báo cáo vấn đề thất bại');
     } finally {
       setConfirming(false);
     }
@@ -116,7 +116,7 @@ const DeliveryDetailPage: React.FC = () => {
           </Button>
           <div className="rounded-lg bg-destructive/10 p-8 text-center">
             <p className="text-lg font-medium text-destructive">
-              {t('error.orderNotFound') || 'Order not found'}
+              Không tìm thấy đơn hàng
             </p>
           </div>
         </div>
@@ -124,7 +124,7 @@ const DeliveryDetailPage: React.FC = () => {
     );
   }
 
-  const isDelivered = order.status?.toLowerCase() === 'delivered';
+  const isDelivered = order?.currentStatus === OrderStatus.Completed;
 
   return (
     <MainLayout>
@@ -140,36 +140,36 @@ const DeliveryDetailPage: React.FC = () => {
             {/* Header with Status */}
             <div className="rounded-lg bg-card p-6 shadow-card">
               <div className="mb-4 flex items-center justify-between">
-                <h1 className="text-2xl font-bold">{t('common.orderDetails')} #{order.id}</h1>
+                <h1 className="text-2xl font-bold">Chi tiết đơn hàng #{order.orderCode}</h1>
                 <span className={`inline-block rounded-full px-4 py-2 text-sm font-semibold ${
                   isDelivered 
                     ? 'bg-success/10 text-success' 
                     : 'bg-primary/10 text-primary'
                 }`}>
-                  {order.status}
+                  {getOrderStatusInfo(order.currentStatus).label}
                 </span>
               </div>
               <p className="text-sm text-muted-foreground">
-                {t('common.orderedOn')}: {new Date(order.createdAt).toLocaleString()}
+                Ngày đặt hàng: {new Date(order.createdAt).toLocaleString('vi-VN')}
               </p>
             </div>
 
             {/* Customer Info */}
             <div className="rounded-lg bg-card p-6 shadow-card">
-              <h2 className="mb-4 text-lg font-bold">{t('common.customerInfo')}</h2>
+              <h2 className="mb-4 text-lg font-bold">Thông tin khách hàng</h2>
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm text-muted-foreground">{t('common.name')}</p>
-                  <p className="font-medium">{order.customerName}</p>
+                  <p className="text-sm text-muted-foreground">Tên khách hàng</p>
+                  <p className="font-medium">{order.receiverName}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">{t('common.email')}</p>
+                  <p className="text-sm text-muted-foreground">Email</p>
                   <p className="font-medium">{order.customerEmail}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">{t('common.phone')}</p>
-                  <a href={`tel:${order.customerPhone}`} className="text-primary hover:underline">
-                    {order.customerPhone}
+                  <p className="text-sm text-muted-foreground">Số điện thoại</p>
+                  <a href={`tel:${order.receiverPhone}`} className="text-primary hover:underline">
+                    {order.receiverPhone}
                   </a>
                 </div>
               </div>
@@ -179,23 +179,23 @@ const DeliveryDetailPage: React.FC = () => {
             <div className="rounded-lg bg-card p-6 shadow-card">
               <h2 className="mb-4 text-lg font-bold flex items-center gap-2">
                 <MapPin className="h-5 w-5" />
-                {t('common.deliveryAddress')}
+                Địa chỉ giao hàng
               </h2>
-              <p className="text-lg font-medium">{order.deliveryAddress}</p>
+              <p className="text-lg font-medium">{order.shippingAddress}</p>
             </div>
 
             {/* Order Items */}
             {order.items && order.items.length > 0 && (
               <div className="rounded-lg bg-card p-6 shadow-card">
-                <h2 className="mb-4 text-lg font-bold">{t('common.items')}</h2>
+                <h2 className="mb-4 text-lg font-bold">Sản phẩm</h2>
                 <div className="space-y-3">
                   {order.items.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between border-b pb-3">
+                    <div key={item.productId} className="flex items-center justify-between border-b pb-3">
                       <div>
                         <p className="font-medium">{item.productName}</p>
                         <p className="text-sm text-muted-foreground">x{item.quantity}</p>
                       </div>
-                      <p className="font-bold">{formatCurrency(item.price * item.quantity)}</p>
+                      <p className="font-bold">{formatCurrency(item.totalPrice)}</p>
                     </div>
                   ))}
                 </div>
@@ -207,31 +207,33 @@ const DeliveryDetailPage: React.FC = () => {
           <div className="space-y-6">
             {/* Total Amount */}
             <div className="rounded-lg bg-primary/10 p-6">
-              <p className="text-sm text-muted-foreground mb-1">{t('common.totalAmount')}</p>
+              <p className="text-sm text-muted-foreground mb-1">Tổng tiền</p>
               <p className="text-3xl font-bold text-primary">{formatCurrency(order.totalAmount)}</p>
             </div>
 
             {/* Actions */}
-            {!isDelivered && (
+            {order.currentStatus === OrderStatus.ReadyForPickup && (
               <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium mb-2">{t('shipper.deliveryNotes')}</label>
-                  <textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder={t('shipper.noteForCustomer')}
-                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
-                    rows={3}
-                  />
-                </div>
+                <Button
+                  onClick={handleConfirmPickup}
+                  disabled={confirmingPickup}
+                  className="gradient-primary w-full gap-2"
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  {confirmingPickup ? 'Đang xác nhận...' : 'Xác nhận lấy hàng'}
+                </Button>
+              </div>
+            )}
 
+            {order.currentStatus === OrderStatus.Shipping && (
+              <div className="space-y-3">
                 <Button
                   onClick={handleConfirmDelivery}
                   disabled={confirming}
                   className="gradient-primary w-full gap-2"
                 >
                   <CheckCircle className="h-4 w-4" />
-                  {confirming ? t('common.confirming') : t('shipper.confirmDelivery')}
+                  {confirming ? 'Đang xác nhận...' : 'Xác nhận giao hàng'}
                 </Button>
 
                 <Button
@@ -240,16 +242,16 @@ const DeliveryDetailPage: React.FC = () => {
                   className="w-full gap-2"
                 >
                   <AlertCircle className="h-4 w-4" />
-                  {t('shipper.reportIssue')}
+                  Báo cáo vấn đề
                 </Button>
 
                 {showIssueForm && (
                   <div className="rounded-lg bg-warning/10 p-4 space-y-3">
-                    <label className="block text-sm font-medium">{t('shipper.issueDescription')}</label>
+                    <label className="block text-sm font-medium">Mô tả vấn đề giao hàng</label>
                     <textarea
                       value={issueReason}
                       onChange={(e) => setIssueReason(e.target.value)}
-                      placeholder={t('shipper.describeProblem')}
+                      placeholder="Nhập lý do giao hàng thất bại..."
                       className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none"
                       rows={3}
                     />
@@ -282,7 +284,7 @@ const DeliveryDetailPage: React.FC = () => {
             {isDelivered && (
               <div className="rounded-lg bg-success/10 p-6 text-center">
                 <CheckCircle className="mx-auto mb-3 h-12 w-12 text-success" />
-                <p className="font-bold text-success">{t('shipper.deliveryCompleted')}</p>
+                <p className="font-bold text-success">Giao hàng đã hoàn thành</p>
               </div>
             )}
           </div>
