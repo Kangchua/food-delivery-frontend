@@ -171,6 +171,8 @@ export interface OrderDetailResponse {
   totalAmount: number;
   items: OrderItemResponse[];
   statusHistories: OrderStatusHistoryResponse[];
+  shipperId?: string;
+  
 }
 export interface OrderFilterModel {
   status?: OrderStatus;

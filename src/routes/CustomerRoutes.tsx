@@ -24,7 +24,6 @@ const CustomerRoutes = () => {
 
   // Handle root-level routes (when accessed from /menu, /cart, etc.)
   const handleRootLevelRoutes = () => {
-    console.log(location.pathname);
     const pathname = location.pathname;
 
     // Routes restricted to customers only

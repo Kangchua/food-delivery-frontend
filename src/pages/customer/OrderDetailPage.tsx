@@ -25,7 +25,6 @@ import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 const OrderDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  console.log("ID từ URL:", id);
   const navigate = useNavigate();
 
   const [order, setOrder] = useState<OrderDetailResponse | null>(null);
@@ -57,7 +56,6 @@ const OrderDetailPage: React.FC = () => {
   };
 
   useEffect(() => {
-    console.log(id);
     if (!id) return;
 
     const fetchOrder = async () => {

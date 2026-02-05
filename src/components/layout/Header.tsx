@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const Header: React.FC = () => {
-  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
   const { itemCount } = useCart();
@@ -78,6 +77,34 @@ const Header: React.FC = () => {
                 to="/admin/categories"
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
+                Danh mục
+              </Link>
+            </>
+          ) : user?.role === 'shipper' ? (
+            <>
+              <Link
+                to="/shipper"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Bảng điều khiển
+              </Link>
+              <Link
+                to="/shipper/orders"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Đơn hàng
+              </Link>
+              <Link
+                to="/shipper/history"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Lịch sử
+              </Link>
+              <Link
+                to="/shipper/notifications"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Thông báo
                 {t("nav.categories")}
               </Link>
               <Link
