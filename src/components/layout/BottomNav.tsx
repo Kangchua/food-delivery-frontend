@@ -42,6 +42,8 @@ const BottomNav: React.FC = () => {
   const staffLinks: NavLink[] = [
     { path: '/staff', icon: LayoutDashboard, label: t('nav.dashboard') },
     { path: '/staff/orders', icon: ClipboardList, label: t('nav.orders') },
+    { path: '/staff/history', icon: ClipboardList, label: 'Lịch sử' },
+    { path: '/staff/reviews', icon: ClipboardList, label: 'Đánh giá' },
     { path: '/profile', icon: User, label: t('nav.profile') },
   ];
 

@@ -5,7 +5,8 @@ import { UserRole } from '@/types/enum';
 // Staff Pages
 import StaffDashboard from '@/pages/staff/StaffDashboard';
 import StaffOrdersPage from '@/pages/staff/StaffOrdersPage';
-import StaffInventoryPage from '@/pages/staff/StaffInventoryPage';
+import StaffOrderHistoryPage from '@/pages/staff/StaffOrderHistoryPage';
+import StaffReviewsPage from '@/pages/staff/StaffReviewsPage';
 
 const StaffRoutes = () => {
   return (
@@ -13,7 +14,8 @@ const StaffRoutes = () => {
       <Route element={<RoleRoute allowedRoles={[UserRole.STAFF]} />}>
         <Route index element={<StaffDashboard />} />
         <Route path="orders" element={<StaffOrdersPage />} />
-        <Route path="inventory" element={<StaffInventoryPage />} />
+        <Route path="history" element={<StaffOrderHistoryPage />} />
+        <Route path="reviews" element={<StaffReviewsPage />} />
         <Route path="*" element={<Navigate to="/staff" replace />} />
       </Route>
     </Routes>
