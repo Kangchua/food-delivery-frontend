@@ -38,6 +38,22 @@ const staffApi = {
     return response.data;
   },
 
+  // Get completed orders
+  getCompletedOrders: async (days: number = 30) => {
+    const response = await axiosClient.get('/staff/completed-orders', {
+      params: { days },
+    });
+    return response.data;
+  },
+
+  // Get reviews
+  getReviews: async (rating?: number) => {
+    const response = await axiosClient.get('/staff/reviews', {
+      params: rating ? { rating } : {},
+    });
+    return response.data;
+  },
+
   // Update order status
   updateOrderStatus: async (orderId: string, status: number) => {
     const response = await axiosClient.put(`/staff/orders/${orderId}/status`, {

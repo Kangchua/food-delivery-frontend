@@ -114,10 +114,16 @@ const Header: React.FC = () => {
                 {t("nav.orders")}
               </Link>
               <Link
-                to="/staff/inventory"
+                to="/staff/history"
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
-                Tồn kho
+                Lịch sử
+              </Link>
+              <Link
+                to="/staff/reviews"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Đánh giá
               </Link>
             </>
           ) : user?.role === "customer" || !user ? (
