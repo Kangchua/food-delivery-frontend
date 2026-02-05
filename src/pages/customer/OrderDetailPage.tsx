@@ -32,8 +32,8 @@ const OrderDetailPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const getPaymentMethodLabel = (method: PaymentMethod) => {
     const labels: Record<number, string> = {
-      [PaymentMethod.Card]: "Tiền mặt",
-      [PaymentMethod.Cash]: "Thẻ ngân hàng",
+      [PaymentMethod.Cash]: "Tiền mặt",
+      [PaymentMethod.Card]: "Thẻ ngân hàng",
       [PaymentMethod.Momo]: "Ví MoMo",
     };
     return labels[method] || "Không xác định";

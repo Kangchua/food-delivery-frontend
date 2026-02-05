@@ -5,11 +5,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
+import { NotificationProvider } from "@/context/NotificationContext";
 import { useAuth } from "@/context/AuthContext";
 import {
   ProtectedRoute,
   AdminRoutes,
   ShipperRoutes,
+  StaffRoutes,
   CustomerRoutes,
 } from "@/routes";
 import { UserRole } from "@/types/enum";
@@ -48,6 +50,8 @@ const RootRedirect = () => {
       return <Navigate to="/admin" replace />;
     case UserRole.SHIPPER:
       return <Navigate to="/shipper" replace />;
+    case UserRole.STAFF:
+      return <Navigate to="/staff" replace />;
     case UserRole.CUSTOMER:
     default:
       return <Navigate to="/customer" replace />;
@@ -58,21 +62,22 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <CartProvider>
-        <TooltipProvider>
-          <Toaster />
-          <SonnerToaster />
-          <BrowserRouter>
-            <Routes>
-              {/* Root route - redirect based on auth status and role */}
-              <Route path="/" element={<RootRedirect />} />
-              <Route
-                path="/*"
-                element={
-                  <ProtectedRoute>
-                    <CustomerRoutes />
-                  </ProtectedRoute>
-                }
-              />
+        <NotificationProvider>
+          <TooltipProvider>
+            <Toaster />
+            <SonnerToaster />
+            <BrowserRouter>
+              <Routes>
+                {/* Root route - redirect based on auth status and role */}
+                <Route path="/" element={<RootRedirect />} />
+                <Route
+                  path="/*"
+                  element={
+                    <ProtectedRoute>
+                      <CustomerRoutes />
+                    </ProtectedRoute>
+                  }
+                />
 
               {/* Auth Routes */}
               <Route path="/auth/login" element={<LoginPage />} />
@@ -105,6 +110,16 @@ const App = () => (
                 }
               />
 
+              {/* Staff Routes - Protected */}
+              <Route
+                path="/staff/*"
+                element={
+                  <ProtectedRoute>
+                    <StaffRoutes />
+                  </ProtectedRoute>
+                }
+              />
+
               {/* Admin Routes - Protected */}
               <Route
                 path="/admin/*"
@@ -118,11 +133,7 @@ const App = () => (
               {/* Root level customer routes (for /menu, /cart, etc.) */}
               <Route
                 path="/menu"
-                element={
-                  <ProtectedRoute>
-                    <CustomerRoutes />
-                  </ProtectedRoute>
-                }
+                element={<CustomerRoutes />}
               />
               <Route
                 path="/cart"
@@ -169,6 +180,7 @@ const App = () => (
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
+        </NotificationProvider>
       </CartProvider>
     </AuthProvider>
   </QueryClientProvider>

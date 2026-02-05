@@ -13,6 +13,7 @@ import AssignShipperPage from "@/pages/admin/AssignShipperPage";
 import ReportsPage from "@/pages/admin/ReportsPage";
 import OrderDetailPageAdmin from "@/pages/admin/OrderDetailPage";
 import OrderOutOfStockPage from "@/pages/admin/OrderOutOfStockPage";
+import AdminReviewsPage from "@/pages/admin/ReviewManagementPage";
 
 const AdminRoutes = () => {
   return (
@@ -28,6 +29,7 @@ const AdminRoutes = () => {
           path="orders/:id/out-of-stock"
           element={<OrderOutOfStockPage />}
         />
+        <Route path="reviews" element={<AdminReviewsPage />} />
         <Route path="shippers" element={<ShippersManagementPage />} />
         <Route path="assign-shipper/:orderId" element={<AssignShipperPage />} />
         <Route path="reports" element={<ReportsPage />} />

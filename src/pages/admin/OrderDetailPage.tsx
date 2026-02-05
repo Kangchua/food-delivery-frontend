@@ -183,15 +183,15 @@ const OrderDetailPageAdmin: React.FC = () => {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-black tracking-tight">
-                  #{order.orderCode}
-                </h1>
+              <h1 className="text-3xl font-black tracking-tight mb-3">
+                #{order.orderCode}
+              </h1>
+              <div className="flex flex-wrap items-center gap-3">
                 <OrderStatusBadge status={order.currentStatus} />
+                <p className="text-sm text-muted-foreground">
+                  {formatDate(order.createdAt)}
+                </p>
               </div>
-              <p className="text-sm text-muted-foreground">
-                {formatDate(order.createdAt)}
-              </p>
             </div>
           </div>
           {order.currentStatus === OrderStatus.Pending && (

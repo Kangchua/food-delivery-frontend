@@ -213,7 +213,7 @@ const CheckoutPage: React.FC = () => {
                   <div className="space-y-2">
                     <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-border p-3 transition-colors hover:border-primary/50">
                       <RadioGroupItem value="cod" />
-                      <span className="font-medium">COD (Thanh toán khi nhận hàng)</span>
+                      <span className="font-medium">Tiền mặt (Thanh toán khi nhận hàng)</span>
                     </label>
                     <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-border p-3 transition-colors hover:border-primary/50">
                       <RadioGroupItem value="momo" />

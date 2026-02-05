@@ -36,6 +36,14 @@ const BottomNav: React.FC = () => {
     { path: '/admin', icon: LayoutDashboard, label: t('nav.dashboard') },
     { path: '/admin/orders', icon: ClipboardList, label: t('nav.orders') },
     { path: '/admin/products', icon: ShoppingCart, label: t('nav.products') },
+    { path: '/admin/users', icon: User, label: t('nav.users') ?? "Khách hàng" },
+  ];
+
+  const staffLinks: NavLink[] = [
+    { path: '/staff', icon: LayoutDashboard, label: t('nav.dashboard') },
+    { path: '/staff/orders', icon: ClipboardList, label: t('nav.orders') },
+    { path: '/staff/history', icon: ClipboardList, label: 'Lịch sử' },
+    { path: '/staff/reviews', icon: ClipboardList, label: 'Đánh giá' },
     { path: '/profile', icon: User, label: t('nav.profile') },
   ];
 
@@ -43,6 +51,8 @@ const BottomNav: React.FC = () => {
     ? adminLinks 
     : user?.role === 'shipper' 
     ? shipperLinks 
+    : user?.role === 'staff'
+    ? staffLinks
     : customerLinks;
 
   return (

@@ -20,6 +20,8 @@ const LoginPage: React.FC = () => {
         return '/admin';
       case UserRole.SHIPPER:
         return '/shipper';
+      case UserRole.STAFF:
+        return '/staff';
       case UserRole.CUSTOMER:
       default:
         return '/customer';
