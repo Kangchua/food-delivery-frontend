@@ -1,15 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Eye, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import MainLayout from '@/components/layout/MainLayout';
 import { formatCurrency } from '@/utils/formatters';
-import { toast } from 'sonner';
-import { OrderAdminSummaryResponse } from '@/types/order.type';
-import { OrderStatus, getOrderStatusInfo } from '@/types/enum';
+import { getOrderStatusInfo } from '@/types/enum';
 import { useOrderContext } from '@/context/OrderContext';
 
-const AssignedOrdersPage: React.FC = () => {
+const AssignedOrdersPage = () => {
   const [acceptingOrderId, setAcceptingOrderId] = useState<string | null>(null);
   const { availableOrders, loading, fetchOrders, acceptOrder } = useOrderContext();
 
@@ -28,27 +26,10 @@ const AssignedOrdersPage: React.FC = () => {
     }
   };
 
-  const filteredOrders = availableOrders;
-
-  const getStatusColor = (status: OrderStatus) => {
-    const info = getOrderStatusInfo(status);
-    return info.color;
-  };
-
   return (
     <MainLayout>
       <div className="container mx-auto px-4 py-6">
-        <h1 className="mb-6 text-2xl font-bold">Đơn hàng</h1>
-
-        {/* Tabs */}
-        <div className="mb-6 flex gap-2 border-b">
-          <button
-            disabled
-            className={`px-4 py-2 font-medium border-b-2 transition-colors border-orange-500 text-orange-600`}
-          >
-            Sẵn sàng để nhận ({availableOrders.length})
-          </button>
-        </div>
+        <h1 className="mb-6 text-2xl font-bold">Đơn hàng sẵn sàng để nhận ({availableOrders.length})</h1>
 
         {/* Orders Grid */}
         <div className="space-y-4">
@@ -56,12 +37,12 @@ const AssignedOrdersPage: React.FC = () => {
             <div className="flex min-h-64 items-center justify-center">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
             </div>
-          ) : filteredOrders.length === 0 ? (
+          ) : availableOrders.length === 0 ? (
             <div className="flex min-h-64 items-center justify-center text-muted-foreground">
               Hiện không có đơn hàng sẵn sàng để nhận
             </div>
           ) : (
-            filteredOrders.map((order) => (
+            availableOrders.map((order) => (
               <div key={order.id} className="rounded-lg bg-card p-6 shadow-card hover:shadow-lg transition-shadow">
                 <div className="grid gap-4 md:grid-cols-4">
                   {/* Order Info */}
@@ -89,7 +70,7 @@ const AssignedOrdersPage: React.FC = () => {
                       <p className="font-bold text-lg text-primary">{formatCurrency(order.totalAmount)}</p>
                     </div>
                     <div>
-                      <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold text-white ${getStatusColor(order.status)}`}>
+                      <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold text-white ${getOrderStatusInfo(order.status).color}`}>
                         {getOrderStatusInfo(order.status).label}
                       </span>
                     </div>

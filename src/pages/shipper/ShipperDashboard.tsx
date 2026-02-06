@@ -8,7 +8,7 @@ import { formatCurrency } from '@/utils/formatters';
 import { toast } from 'sonner';
 import { useOrderContext } from '@/context/OrderContext';
 
-// Import đúng Enum từ file định nghĩa của bạn
+
 import { OrderStatus, getOrderStatusInfo } from '@/types/enum';
 import { OrderAdminSummaryResponse } from '@/types/order.type';
 
@@ -37,12 +37,12 @@ const ShipperDashboard: React.FC = () => {
       
       const statsData = statsRes?.data || null;
       
-      // Update stats with actual order counts từ context
+      
       const updatedStats = {
         ...statsData,
         pendingDeliveries: availableOrders.length, // Chờ lấy = số available orders
         deliveryInProgress: assignedOrders.length // Đang giao = số assigned orders
-        // completedDeliveries và earningToday đã được tính từ backend
+       
       };
       
       setStats(updatedStats);
