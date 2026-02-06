@@ -18,6 +18,7 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
   const { itemCount } = useCart();
+  const { t } = useTranslation();
 
   const handleLogout = () => {
     logout();
