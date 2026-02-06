@@ -1,44 +1,34 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Eye } from 'lucide-react';
+import { Eye, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import MainLayout from '@/components/layout/MainLayout';
-import useTranslation from '@/hooks/useTranslation';
-import { shipperApi } from '@/api/shipperApi';
 import { formatCurrency } from '@/utils/formatters';
 import { toast } from 'sonner';
 import { OrderAdminSummaryResponse } from '@/types/order.type';
 import { OrderStatus, getOrderStatusInfo } from '@/types/enum';
+import { useOrderContext } from '@/context/OrderContext';
 
 const AssignedOrdersPage: React.FC = () => {
-  const { t } = useTranslation();
-  const [orders, setOrders] = useState<OrderAdminSummaryResponse[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filterStatus, setFilterStatus] = useState<string>('');
+  const [acceptingOrderId, setAcceptingOrderId] = useState<string | null>(null);
+  const { availableOrders, loading, fetchOrders, acceptOrder } = useOrderContext();
 
   useEffect(() => {
-    fetchAssignedOrders();
-  }, []);
+    fetchOrders();
+  }, [fetchOrders]);
 
-  const fetchAssignedOrders = async () => {
+  const handleAcceptOrder = async (orderId: string) => {
     try {
-      setLoading(true);
-      const response = await shipperApi.getAssignedOrders();
-      const ordersData = response?.data || [];
-      setOrders(ordersData);
+      setAcceptingOrderId(orderId);
+      await acceptOrder(orderId);
     } catch (err) {
-      console.error('Error fetching assigned orders:', err);
-      toast.error('Không thể tải danh sách đơn hàng');
+      // Error already handled in context
     } finally {
-      setLoading(false);
+      setAcceptingOrderId(null);
     }
   };
 
-
-  const filteredOrders = orders.filter(order => {
-    if (!filterStatus) return true;
-    return order.status.toString() === filterStatus;
-  });
+  const filteredOrders = availableOrders;
 
   const getStatusColor = (status: OrderStatus) => {
     const info = getOrderStatusInfo(status);
@@ -48,21 +38,16 @@ const AssignedOrdersPage: React.FC = () => {
   return (
     <MainLayout>
       <div className="container mx-auto px-4 py-6">
-        <h1 className="mb-6 text-2xl font-bold">{t('shipper.assignedOrders') || 'Assigned Orders'}</h1>
+        <h1 className="mb-6 text-2xl font-bold">Đơn hàng</h1>
 
-        {/* Status Filter */}
-        <div className="mb-6">
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="rounded-lg border bg-background px-4 py-2 focus:border-primary focus:outline-none"
+        {/* Tabs */}
+        <div className="mb-6 flex gap-2 border-b">
+          <button
+            disabled
+            className={`px-4 py-2 font-medium border-b-2 transition-colors border-orange-500 text-orange-600`}
           >
-            <option value="">Tất cả trạng thái</option>
-            <option value={OrderStatus.Pending.toString()}>{getOrderStatusInfo(OrderStatus.Pending).label}</option>
-            <option value={OrderStatus.Confirmed.toString()}>{getOrderStatusInfo(OrderStatus.Confirmed).label}</option>
-            <option value={OrderStatus.Shipping.toString()}>{getOrderStatusInfo(OrderStatus.Shipping).label}</option>
-            <option value={OrderStatus.Completed.toString()}>{getOrderStatusInfo(OrderStatus.Completed).label}</option>
-          </select>
+            Sẵn sàng để nhận ({availableOrders.length})
+          </button>
         </div>
 
         {/* Orders Grid */}
@@ -73,7 +58,7 @@ const AssignedOrdersPage: React.FC = () => {
             </div>
           ) : filteredOrders.length === 0 ? (
             <div className="flex min-h-64 items-center justify-center text-muted-foreground">
-              {filterStatus ? 'Không có đơn hàng phù hợp với bộ lọc' : 'Không có đơn hàng được giao'}
+              Hiện không có đơn hàng sẵn sàng để nhận
             </div>
           ) : (
             filteredOrders.map((order) => (
@@ -111,14 +96,22 @@ const AssignedOrdersPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Action Button */}
+                {/* Action Buttons */}
                 <div className="mt-4 flex gap-2 border-t pt-4">
                   <Link to={`/shipper/orders/${order.id}`} className="flex-1">
-                    <Button className="w-full gap-2">
+                    <Button variant="outline" className="w-full gap-2">
                       <Eye className="h-4 w-4" />
                       Xem chi tiết
                     </Button>
                   </Link>
+                  <Button
+                    onClick={() => handleAcceptOrder(order.id)}
+                    disabled={acceptingOrderId === order.id}
+                    className="flex-1 gap-2 bg-orange-500 hover:bg-orange-600"
+                  >
+                    <Check className="h-4 w-4" />
+                    {acceptingOrderId === order.id ? 'Đang nhận...' : 'Nhận đơn'}
+                  </Button>
                 </div>
               </div>
             ))

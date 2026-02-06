@@ -106,7 +106,7 @@ const DeliveryHistoryPage: React.FC = () => {
 
         {/* Summary Stats */}
         {orders.length > 0 && (
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
             <div className="rounded-lg bg-card p-6 shadow-card">
               <p className="text-sm text-muted-foreground">Tổng giao hàng</p>
               <p className="mt-2 text-3xl font-bold">{orders.length}</p>
@@ -114,24 +114,12 @@ const DeliveryHistoryPage: React.FC = () => {
 
             <div className="rounded-lg bg-card p-6 shadow-card">
               <p className="text-sm text-muted-foreground">Tổng thu nhập</p>
-              <p className="mt-2 text-3xl font-bold text-success">
-                {formatCurrency(orders.reduce((sum, o) => sum + o.totalAmount, 0))}
+              <p className="mt-2 text-3xl font-bold text-emerald-600">
+                {formatCurrency(orders.reduce((sum, o) => sum + (typeof o.totalAmount === 'string' ? parseFloat(o.totalAmount) : o.totalAmount || 0), 0))}
               </p>
             </div>
 
-            <div className="rounded-lg bg-card p-6 shadow-card">
-              <p className="text-sm text-muted-foreground">Thời gian bình quân</p>
-              <p className="mt-2 text-3xl font-bold">
-                {Math.round(
-                  orders.reduce((sum, o) => {
-                    const start = new Date(o.createdAt);
-                    const end = new Date(o.createdAt);
-                    return sum + (end.getTime() - start.getTime());
-                  }, 0) / (orders.length || 1) / (1000 * 60)
-                )}{' '}
-                phút
-              </p>
-            </div>
+
           </div>
         )}
       </div>

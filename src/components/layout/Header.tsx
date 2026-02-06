@@ -96,12 +96,6 @@ const Header: React.FC = () => {
               >
                 Lịch sử
               </Link>
-              <Link
-                to="/shipper/notifications"
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-              >
-                Thông báo
-              </Link>
             </>
           ) : user?.role === 'customer' || !user ? (
             <>

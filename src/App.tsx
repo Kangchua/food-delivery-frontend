@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
+import { OrderProvider } from "@/context/OrderContext";
 import { useAuth } from "@/context/AuthContext";
 import {
   ProtectedRoute,
@@ -58,9 +59,10 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <CartProvider>
-        <TooltipProvider>
-          <Toaster />
-          <SonnerToaster />
+        <OrderProvider>
+          <TooltipProvider>
+            <Toaster />
+            <SonnerToaster />
           <BrowserRouter>
             <Routes>
               {/* Root route - redirect based on auth status and role */}
@@ -169,6 +171,7 @@ const App = () => (
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
+        </OrderProvider>
       </CartProvider>
     </AuthProvider>
   </QueryClientProvider>

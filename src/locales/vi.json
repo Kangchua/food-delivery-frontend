@@ -149,7 +149,6 @@
     "minutes": "phút"
   },
   "order": {
-    "title": "Đơn hàng của tôi",
     "orderId": "Mã đơn hàng",
     "orderNumber": "Số đơn hàng",
     "orderDate": "Ngày đặt",

@@ -19,6 +19,7 @@ const DeliveryDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [confirmingPickup, setConfirmingPickup] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [accepting, setAccepting] = useState(false);
   const [showIssueForm, setShowIssueForm] = useState(false);
   const [issueReason, setIssueReason] = useState('');
 
@@ -57,6 +58,22 @@ const DeliveryDetailPage: React.FC = () => {
       toast.error('Xác nhận lấy hàng thất bại');
     } finally {
       setConfirmingPickup(false);
+    }
+  };
+
+  const handleAcceptOrder = async () => {
+    if (!order) return;
+
+    try {
+      setAccepting(true);
+      await shipperApi.acceptOrder(order.orderId);
+      toast.success('Đã nhận đơn hàng thành công');
+      fetchOrderDetail();
+    } catch (err) {
+      console.error('Error accepting order:', err);
+      toast.error('Nhận đơn hàng thất bại');
+    } finally {
+      setAccepting(false);
     }
   };
 
@@ -212,7 +229,20 @@ const DeliveryDetailPage: React.FC = () => {
             </div>
 
             {/* Actions */}
-            {order.currentStatus === OrderStatus.ReadyForPickup && (
+            {order.currentStatus === OrderStatus.ReadyForPickup && !order.shipperId && (
+              <div className="space-y-3">
+                <Button
+                  onClick={handleAcceptOrder}
+                  disabled={accepting}
+                  className="gradient-primary w-full gap-2"
+                >
+                  <Check className="h-4 w-4" />
+                  {accepting ? 'Đang nhận...' : 'Nhận đơn hàng'}
+                </Button>
+              </div>
+            )}
+
+            {order.currentStatus === OrderStatus.ReadyForPickup && order.shipperId && (
               <div className="space-y-3">
                 <Button
                   onClick={handleConfirmPickup}

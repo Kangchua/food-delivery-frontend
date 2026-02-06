@@ -19,6 +19,14 @@ export const shipperApi = {
   getAssignedOrders: () => 
     axiosClient.get<OrderAdminSummaryResponse[]>(`/Shipper/assigned-orders`),
 
+  // Lấy danh sách các đơn hàng sẵn sàng để shipper tự nhận
+  getAvailableOrders: () =>
+    axiosClient.get<OrderAdminSummaryResponse[]>(`/Shipper/available-orders`),
+
+  // Shipper chấp nhận/nhận một đơn hàng
+  acceptOrder: (orderId: string) =>
+    axiosClient.post(`/Shipper/accept-order/${orderId}`),
+
   // 3. Xác nhận lấy hàng
   confirmPickup: (orderId: string) => 
     axiosClient.post(`/Shipper/confirm-pickup/${orderId}`),
