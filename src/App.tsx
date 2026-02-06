@@ -70,6 +70,105 @@ const App = () => (
               <Routes>
                 {/* Root route - redirect based on auth status and role */}
                 <Route path="/" element={<RootRedirect />} />
+
+                {/* Auth Routes */}
+                <Route path="/auth/login" element={<LoginPage />} />
+                <Route path="/auth/register" element={<RegisterPage />} />
+                <Route
+                  path="/auth/forgot-password"
+                  element={<ForgotPasswordPage />}
+                />
+                <Route
+                  path="/auth/reset-password"
+                  element={<ResetPasswordPage />}
+                />
+
+                <Route
+                  path="/customer/*"
+                  element={
+                    <ProtectedRoute>
+                      <CustomerRoutes />
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Shipper Routes - Protected */}
+                <Route
+                  path="/shipper/*"
+                  element={
+                    <ProtectedRoute>
+                      <ShipperRoutes />
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Staff Routes - Protected */}
+                <Route
+                  path="/staff/*"
+                  element={
+                    <ProtectedRoute>
+                      <StaffRoutes />
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Admin Routes - Protected */}
+                <Route
+                  path="/admin/*"
+                  element={
+                    <ProtectedRoute>
+                      <AdminRoutes />
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Root level customer routes (for /menu, /cart, etc.) */}
+                <Route
+                  path="/menu"
+                  element={<CustomerRoutes />}
+                />
+                <Route
+                  path="/cart"
+                  element={
+                    <ProtectedRoute>
+                      <CustomerRoutes />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/checkout"
+                  element={
+                    <ProtectedRoute>
+                      <CustomerRoutes />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/profile/*"
+                  element={
+                    <ProtectedRoute>
+                      <CustomerRoutes />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <CustomerRoutes />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/product/:productId"
+                  element={
+                    <ProtectedRoute>
+                      <CustomerRoutes />
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Catch-all - must be last */}
                 <Route
                   path="/*"
                   element={
@@ -79,106 +178,9 @@ const App = () => (
                   }
                 />
 
-              {/* Auth Routes */}
-              <Route path="/auth/login" element={<LoginPage />} />
-              <Route path="/auth/register" element={<RegisterPage />} />
-              <Route
-                path="/auth/forgot-password"
-                element={<ForgotPasswordPage />}
-              />
-              <Route
-                path="/auth/reset-password"
-                element={<ResetPasswordPage />}
-              />
-
-              <Route
-                path="/customer/*"
-                element={
-                  <ProtectedRoute>
-                    <CustomerRoutes />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* Shipper Routes - Protected */}
-              <Route
-                path="/shipper/*"
-                element={
-                  <ProtectedRoute>
-                    <ShipperRoutes />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* Staff Routes - Protected */}
-              <Route
-                path="/staff/*"
-                element={
-                  <ProtectedRoute>
-                    <StaffRoutes />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* Admin Routes - Protected */}
-              <Route
-                path="/admin/*"
-                element={
-                  <ProtectedRoute>
-                    <AdminRoutes />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* Root level customer routes (for /menu, /cart, etc.) */}
-              <Route
-                path="/menu"
-                element={<CustomerRoutes />}
-              />
-              <Route
-                path="/cart"
-                element={
-                  <ProtectedRoute>
-                    <CustomerRoutes />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/checkout"
-                element={
-                  <ProtectedRoute>
-                    <CustomerRoutes />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile/*"
-                element={
-                  <ProtectedRoute>
-                    <CustomerRoutes />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <CustomerRoutes />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/product/:productId"
-                element={
-                  <ProtectedRoute>
-                    <CustomerRoutes />
-                  </ProtectedRoute>
-                }
-              />
-
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
         </TooltipProvider>
         </NotificationProvider>
       </CartProvider>

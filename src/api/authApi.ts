@@ -22,11 +22,12 @@ const decodeToken = (token: string): Record<string, any> => {
 const getRolesFromToken = (token: string): string[] => {
   const decoded = decodeToken(token);
   console.log('DEBUG - Decoded JWT token:', decoded);
+  console.log('DEBUG - All token keys:', Object.keys(decoded));
   
   // JWT role claims can be in different formats
-  // Try common formats: 'role', 'roles', 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
-  const roleKey = Object.keys(decoded).find(
-    (key) => key === 'role' || key === 'roles' || key.includes('/role')
+  // Try common formats: 'role', 'roles', 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/role'
+  let roleKey = Object.keys(decoded).find(
+    (key) => key.toLowerCase() === 'role' || key.toLowerCase() === 'roles' || key.toLowerCase().includes('/role')
   );
   
   console.log('DEBUG - Looking for role key, found:', roleKey);
@@ -35,9 +36,15 @@ const getRolesFromToken = (token: string): string[] => {
     const value = decoded[roleKey];
     console.log('DEBUG - Role value:', value);
     // Handle both single role (string) and multiple roles (array)
-    const roles = Array.isArray(value) ? value : [value];
+    const roles = Array.isArray(value) ? value : (value ? [value] : []);
     console.log('DEBUG - Extracted roles:', roles);
     return roles;
+  }
+  
+  // Fallback: Check all keys that might contain roles
+  console.log('DEBUG - Checking all keys for potential role data:');
+  for (const key of Object.keys(decoded)) {
+    console.log(`  Key: ${key}, Value:`, decoded[key]);
   }
   
   console.log('DEBUG - No role key found in token');

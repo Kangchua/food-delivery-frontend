@@ -3,7 +3,8 @@ import { Bell, Check, CheckCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import MainLayout from '@/components/layout/MainLayout';
 import useTranslation from '@/hooks/useTranslation';
-import { notificationApi, NotificationResponse } from '@/api/notificationApi';
+import notificationApi from '@/api/notificationApi';
+import { NotificationResponse } from '@/types/notification.type';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
